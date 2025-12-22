@@ -31,9 +31,14 @@ const signUpSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
   preferredName: z.string().optional(),
+  profileImage: z.instanceof(File, "Please upload a valid image file").optional(),
 })
 
 const AuthForm = ({ type }: AuthFormProps) => {
+  // You can change these to match your company branding
+  const companyLogo = "public\\logo-image.jpg" // <-- Replace this with your logo
+  const companyName = "Partner AI"
+
   if (type === 'sign-up') {
     const form = useForm<z.infer<typeof signUpSchema>>({
       resolver: zodResolver(signUpSchema),
@@ -47,65 +52,70 @@ const AuthForm = ({ type }: AuthFormProps) => {
     })
 
     const onSubmit = (data: z.infer<typeof signUpSchema>) => {
-      console.log(data)
+      console.log("Form Data:", data)
     }
 
     return (
       <Card className="w-full max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle>Sign Up</CardTitle>
-          <CardDescription>Create your account</CardDescription>
+        <CardHeader className="text-center">
+          <div className="flex justify-center mb-4">
+            <img 
+              src={companyLogo} 
+              alt="Company Logo" 
+              className="w-16 h-16 rounded-full"
+            />
+          </div>
+          <CardTitle className="text-2xl font-bold">
+            {companyName}
+          </CardTitle>
+          <CardDescription>
+            Get the job of your dreams
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <Label htmlFor="firstName">First Name</Label>
-              <Input
-                id="firstName"
-                {...form.register("firstName")}
-              />
+              <Input {...form.register("firstName")} />
               {form.formState.errors.firstName && (
                 <p className="text-red-500 text-sm">{form.formState.errors.firstName.message}</p>
               )}
             </div>
             <div>
               <Label htmlFor="lastName">Last Name</Label>
-              <Input
-                id="lastName"
-                {...form.register("lastName")}
-              />
+              <Input {...form.register("lastName")} />
               {form.formState.errors.lastName && (
                 <p className="text-red-500 text-sm">{form.formState.errors.lastName.message}</p>
               )}
             </div>
             <div>
               <Label htmlFor="preferredName">Preferred Name (Optional)</Label>
-              <Input
-                id="preferredName"
-                {...form.register("preferredName")}
-              />
+              <Input {...form.register("preferredName")} />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                {...form.register("email")}
-              />
+              <Input {...form.register("email")} type="email" />
               {form.formState.errors.email && (
                 <p className="text-red-500 text-sm">{form.formState.errors.email.message}</p>
               )}
             </div>
             <div>
               <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                {...form.register("password")}
-              />
+              <Input {...form.register("password")} type="password" />
               {form.formState.errors.password && (
                 <p className="text-red-500 text-sm">{form.formState.errors.password.message}</p>
               )}
+            </div>
+            <div>
+              <Label htmlFor="profileImage">Profile Image (Optional)</Label>
+              <Input 
+                type="file" 
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  form.setValue("profileImage", file);
+                }}
+              />
             </div>
             <Button type="submit" className="w-full">
               Sign Up
@@ -130,30 +140,33 @@ const AuthForm = ({ type }: AuthFormProps) => {
 
   return (
     <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Sign In</CardTitle>
-        <CardDescription>Welcome back!</CardDescription>
+      <CardHeader className="text-center">
+        <div className="flex justify-center mb-4">
+          <img 
+            src={companyLogo} 
+            alt="Company Logo" 
+            className="w-16 h-16 rounded-full"
+          />
+        </div>
+        <CardTitle className="text-2xl font-bold">
+          {companyName}
+        </CardTitle>
+        <CardDescription>
+          Welcome back
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              {...form.register("email")}
-            />
+            <Input {...form.register("email")} type="email" />
             {form.formState.errors.email && (
               <p className="text-red-500 text-sm">{form.formState.errors.email.message}</p>
             )}
           </div>
           <div>
             <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              {...form.register("password")}
-            />
+            <Input {...form.register("password")} type="password" />
             {form.formState.errors.password && (
               <p className="text-red-500 text-sm">{form.formState.errors.password.message}</p>
             )}
@@ -167,4 +180,4 @@ const AuthForm = ({ type }: AuthFormProps) => {
   )
 }
 
-export default AuthForm;
+export default AuthForm
