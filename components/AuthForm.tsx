@@ -69,7 +69,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
             {companyName}
           </CardTitle>
           <CardDescription>
-            Get the job of your dreams
+            Practice for the job of your dreams!
           </CardDescription>
         </CardHeader>
         <CardContent>
