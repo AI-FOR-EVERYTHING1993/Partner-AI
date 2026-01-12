@@ -36,7 +36,7 @@ const signUpSchema = z.object({
 
 const AuthForm = ({ type }: AuthFormProps) => {
   // You can change these to match your company branding
-  const companyLogo = "public\\logo-image.jpg" // <-- Replace this with your logo
+  const companyLogo = "/logo-image.jpg" // <-- Replace this with your logo
   const companyName = "Partner AI"
 
   if (type === 'sign-up') {
