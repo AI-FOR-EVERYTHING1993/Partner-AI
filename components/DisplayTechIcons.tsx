@@ -1,10 +1,23 @@
 import { getTechLogos } from "@/lib/utils";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
-import { cn } from "@/lib/utils"; 
+import { cn } from "@/lib/utils";
 
-const   DisplayTechIcons = async ({ techStack }: TechIconProps) => {
-    const techStackIcons = await getTechLogos(techStack);
+const DisplayTechIcons = ({ techStack }: TechIconProps) => {
+    const [techStackIcons, setTechStackIcons] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchTechLogos = async () => {
+            try {
+                const icons = await getTechLogos(techStack);
+                setTechStackIcons(icons);
+            } catch (error) {
+                console.error('Error fetching tech logos:', error);
+            }
+        };
+        
+        fetchTechLogos();
+    }, [techStack]);
 
     return (
         <div className="flex flex-row">

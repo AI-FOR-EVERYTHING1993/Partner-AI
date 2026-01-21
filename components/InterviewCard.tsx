@@ -58,8 +58,8 @@ const InterviewCard = ({ interview }: InterviewCardProps) => {
           <p>{feedback?.totalScore || "---"}/100</p>
         </div>
       </div>
-      <p className="line-clamp-2 mt-6">
-        {feedback ? feedback.finalAssessment : "No feedback available yet. Complete the interview to receive detailed feedback and improve your skills!"}
+      <p className="line-clamp-2 mt-4">
+        {feedback ? feedback.finalAssessment : "No feedback available yet. Complete the interview to receive detailed feedback and improve your interview taking skills!"}
       </p>
       <div className="flex flex-row items-center justify-between gap-4 mt-4">
         <DisplayTechIcons techStack={interview.techstack} />
