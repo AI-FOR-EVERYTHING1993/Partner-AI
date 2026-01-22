@@ -14,8 +14,8 @@ const Page = () => {
     
     <section className= "card-cta">
       <div className="flex flex-col gap-6 max-w-lg">
-        <h2>Practice for the job of your dreams and fix your CV with voice AI</h2>
-        <p className="text-lg">Get recommedations for your resume and practice for the job with instant feedback.</p>
+        <h2>Practice for any job interview with AI-powered preparation</h2>
+        <p className="text-lg">Master technical and non-technical interviews across all industries. Get personalized feedback and build confidence for your dream role.</p>
       
       
       <Button asChild className="btn-primary max-sm:w-full">

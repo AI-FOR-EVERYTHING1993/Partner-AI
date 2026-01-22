@@ -27,7 +27,7 @@ const InterviewCard = ({ interview }: InterviewCardProps) => {
 
 
   return (
-    <div className=" relative card-border w-[360px] max-sm:w-full p-4 flex flex-col gap-2">
+    <div className="relative card-border w-full max-w-[360px] min-h-[420px] p-4 flex flex-col gap-2">
       <div className="card-interview relative">
         <div className="relative">
           <div className="absolute top-0 right-0 z-10 w-fit px-4 py-2 rounded-bl-lg bg-green-600">
@@ -58,11 +58,26 @@ const InterviewCard = ({ interview }: InterviewCardProps) => {
           <p>{feedback?.totalScore || "---"}/100</p>
         </div>
       </div>
-      <p className="line-clamp-2 mt-4">
+      <p className="line-clamp-2 mt-4 flex-grow">
         {feedback ? feedback.finalAssessment : "No feedback available yet. Complete the interview to receive detailed feedback and improve your interview taking skills!"}
       </p>
-      <div className="flex flex-row items-center justify-between gap-4 mt-4">
-        <DisplayTechIcons techStack={interview.techstack} />
+      <div className="flex flex-row items-center justify-between gap-4 mt-auto pt-4 pb-2">
+        {interview.type === "Technical" ? (
+          <DisplayTechIcons techStack={interview.techstack} />
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {interview.techstack.slice(0, 3).map((skill, index) => (
+              <span key={skill} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                {skill}
+              </span>
+            ))}
+            {interview.techstack.length > 3 && (
+              <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                +{interview.techstack.length - 3}
+              </span>
+            )}
+          </div>
+        )}
 
         <Button className="btn-primary">
           <Link href={feedback ? `/interview/${interview.id}` : `/interview/${interview.id}`}>
