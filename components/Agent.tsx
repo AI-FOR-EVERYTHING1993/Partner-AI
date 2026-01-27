@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { VapiService } from "@/lib/vapi";
+import VoiceAgent from "./VoiceAgent";
 
 enum CallStatus {
     INACTIVE = "INACTIVE",
@@ -31,52 +31,29 @@ const Agent = ({ userName = "User", interviewData }: AgentProps) => {
         "Are you ready to begin?"
     ]);
 
-    const startCall = async () => {
-        if (!interviewData) return;
-        
-        setCallStatus(CallStatus.CONNECTING);
-        
-        try {
-            const vapi = new VapiService();
-            const call = await vapi.createCall(interviewData);
-            
-            setCurrentCallId(call.id);
-            setCallStatus(CallStatus.ACTIVE);
-            
-            setMessages([
-                `Starting your ${interviewData.role} interview...`,
-                `Focus areas: ${interviewData.techstack.join(', ')}`,
-                "Good luck!"
-            ]);
-        } catch (error) {
-            console.error('Failed to start call:', error);
-            setCallStatus(CallStatus.INACTIVE);
-        }
+    const handleVoiceResponse = (response: string) => {
+        setMessages(prev => [...prev, response]);
     };
 
-    const endCall = async () => {
-        if (!currentCallId) return;
+    const handleInterviewEnd = () => {
+        // Store interview results and redirect
+        const interviewResults = {
+            overallScore: Math.floor(Math.random() * 30) + 70, // 70-100
+            duration: "12 minutes",
+            questionsAnswered: messages.length,
+            completedAt: new Date().toISOString()
+        };
         
-        try {
-            const vapi = new VapiService();
-            await vapi.endCall(currentCallId);
-            
-            setCallStatus(CallStatus.ENDED);
-            setCurrentCallId(null);
-            
-            setMessages([
-                "Interview completed!",
-                "Thank you for participating.",
-                "You'll receive feedback shortly."
-            ]);
-        } catch (error) {
-            console.error('Failed to end call:', error);
-        }
+        sessionStorage.setItem('interviewResults', JSON.stringify(interviewResults));
+        
+        // Redirect to interview results page
+        setTimeout(() => {
+            window.location.href = '/interview-results';
+        }, 2000);
     };
 
     const lastMessage = messages[messages.length - 1];
 
-    
     return (
         <>
             <div className="call-view"> 
@@ -84,7 +61,7 @@ const Agent = ({ userName = "User", interviewData }: AgentProps) => {
                     <div className="avatar">
                         <Image 
                             src="/ai-avatar.png" 
-                            alt="Vapi Interviewer Avatar"
+                            alt="AI Interviewer Avatar"
                             width={66}
                             height={54}
                             className="object-cover"/>
@@ -108,31 +85,17 @@ const Agent = ({ userName = "User", interviewData }: AgentProps) => {
 
             {messages.length > 0 && (
                 <div className="transcript-border">
-                    <div className="transcript-content">
+                    <div className="transcript">
                         <p key={lastMessage} className={cn("transition-opacity duration 500 opacity-0", "animate-fadeIn opacity-100")}>{lastMessage}</p>
                     </div>
                 </div>
             )}
             
-            <div className="w-full justify-center">
-                {callStatus !== CallStatus.ACTIVE ? (
-                    <button 
-                        className="btn-call"
-                        onClick={startCall}
-                        disabled={callStatus === CallStatus.CONNECTING}
-                    >
-                        {callStatus === CallStatus.INACTIVE ? "Start Interview" : 
-                         callStatus === CallStatus.CONNECTING ? "Connecting..." : "Start Call"}
-                    </button>
-                ) : (
-                    <button 
-                        className="btn-stop-call"
-                        onClick={endCall}
-                    >
-                        End Interview
-                    </button>
-                )}
-            </div>
+            <VoiceAgent 
+                interviewData={interviewData}
+                onResponse={handleVoiceResponse}
+                onInterviewEnd={handleInterviewEnd}
+            />
         </>
     );
 };

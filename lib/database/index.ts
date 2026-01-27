@@ -1,5 +1,5 @@
 import { DatabaseService } from './types';
-import { FirebaseService } from './firebase';
+import { LocalStorageService } from './firebase';
 
-// For now, just use Firebase. AWS can be added later when needed.
-export const databaseService: DatabaseService = new FirebaseService();
+// Using localStorage for simple data persistence
+export const databaseService: DatabaseService = new LocalStorageService();

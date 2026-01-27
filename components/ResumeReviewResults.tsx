@@ -267,15 +267,15 @@ const ResumeReviewResults = ({ resumeAnalysis }: ResumeReviewProps) => {
 
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3">
-            Download Improved Resume
-          </Button>
           <Link href="/select-interview">
-            <Button variant="outline" className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 px-8 py-3">
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-4 text-lg font-semibold">
               Start Interview Practice
             </Button>
           </Link>
-          <Button variant="outline" className="px-8 py-3">
+          <Button variant="outline" className="border-emerald-600 text-emerald-600 hover:bg-emerald-50 px-8 py-4 text-lg font-semibold">
+            Improve Resume Further
+          </Button>
+          <Button variant="outline" className="px-8 py-4 text-lg font-semibold">
             Schedule Expert Review Call
           </Button>
         </div>
