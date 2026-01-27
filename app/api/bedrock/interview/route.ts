@@ -5,11 +5,19 @@ export async function POST(request: Request) {
     const { action, message, interviewData, transcript } = await request.json();
 
     if (action === 'start') {
-      const response = await bedrockService.generateInterviewResponse(
-        "Let's begin the interview", 
-        interviewData
-      );
-      return Response.json({ success: true, response });
+      // Generate an engaging opening message
+      const openingPrompt = `You are starting an interview for a ${interviewData.role} position at ${interviewData.level} level. The candidate's focus areas are: ${interviewData.techstack.join(', ')}.
+
+Generate a warm, professional opening greeting that:
+1. Welcomes the candidate
+2. Introduces yourself as their AI interviewer
+3. Asks an engaging opening question about their background
+4. Sets a positive, encouraging tone
+
+Keep it conversational and under 100 words.`;
+      
+      const response = await bedrockService.generateInterviewResponse(openingPrompt, interviewData);
+      return Response.json({ success: true, response, isOpening: true });
     }
 
     if (message && interviewData) {

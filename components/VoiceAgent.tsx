@@ -40,29 +40,72 @@ const VoiceAgent = ({ interviewData, onResponse, onInterviewEnd }: VoiceAgentPro
     }
   };
 
-  // Convert audio data and send to Nova Sonic
-  const convertAndSendAudio = async (audioBlob: Blob) => {
+  // Initialize WebSocket connection to Nova
+  const connectToNova = async () => {
     try {
-      const arrayBuffer = await audioBlob.arrayBuffer();
-      
-      if (sessionId) {
-        const response = await fetch('/api/nova-sonic', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'process',
-            sessionId,
-            audioData: Array.from(new Uint8Array(arrayBuffer))
-          })
-        });
+      const ws = new WebSocket('ws://localhost:8081');
+      websocketRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('Connected to Nova WebSocket');
+        setIsConnected(true);
         
-        const data = await response.json();
-        if (data.success && onResponse) {
-          onResponse(data.response);
-        }
-      }
+        // Start Nova session
+        ws.send(JSON.stringify({
+          type: 'start_session',
+          sessionId,
+          interviewData
+        }));
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        handleNovaMessage(data);
+      };
+
+      ws.onclose = () => {
+        console.log('Disconnected from Nova');
+        setIsConnected(false);
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
     } catch (error) {
-      console.error('Error processing audio:', error);
+      console.error('Failed to connect to Nova:', error);
+    }
+  };
+
+  const handleNovaMessage = (data) => {
+    switch (data.type) {
+      case 'session_started':
+        console.log('Nova session started');
+        // The initial greeting will be sent automatically by the server
+        break;
+      case 'audio_output':
+        playAudioResponse(data.audio);
+        break;
+      case 'text_output':
+        console.log('AI says:', data.text);
+        if (onResponse) {
+          onResponse(data.text);
+        }
+        break;
+      case 'error':
+        console.error('Nova error:', data.message);
+        break;
+    }
+  };
+
+  const playAudioResponse = (audioData) => {
+    try {
+      const audioBlob = new Blob([new Uint8Array(atob(audioData).split('').map(c => c.charCodeAt(0)))], { type: 'audio/wav' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.play();
+    } catch (error) {
+      console.error('Error playing audio:', error);
     }
   };
 
@@ -73,21 +116,8 @@ const VoiceAgent = ({ interviewData, onResponse, onInterviewEnd }: VoiceAgentPro
         await initializeAudio();
       }
 
-      // Start Nova Sonic session
-      const response = await fetch('/api/nova-sonic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'start',
-          interviewData
-        })
-      });
-      
-      const data = await response.json();
-      if (data.success) {
-        setSessionId(data.sessionId);
-        setIsConnected(true);
-      }
+      // Connect to Nova WebSocket
+      await connectToNova();
 
       const mediaRecorder = new MediaRecorder(streamRef.current!, {
         mimeType: 'audio/webm;codecs=opus'
@@ -96,7 +126,8 @@ const VoiceAgent = ({ interviewData, onResponse, onInterviewEnd }: VoiceAgentPro
       mediaRecorderRef.current = mediaRecorder;
 
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0 && isConnected) {
+        if (event.data.size > 0 && websocketRef.current?.readyState === WebSocket.OPEN) {
+          // Convert and send audio to Nova via WebSocket
           convertAndSendAudio(event.data);
         }
       };
@@ -108,22 +139,33 @@ const VoiceAgent = ({ interviewData, onResponse, onInterviewEnd }: VoiceAgentPro
     }
   };
 
+  const convertAndSendAudio = async (audioBlob: Blob) => {
+    try {
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const base64Audio = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+      
+      if (websocketRef.current?.readyState === WebSocket.OPEN) {
+        websocketRef.current.send(JSON.stringify({
+          type: 'audio_input',
+          audioData: base64Audio
+        }));
+      }
+    } catch (error) {
+      console.error('Error converting audio:', error);
+    }
+  };
+
   const stopRecording = async () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
     }
 
-    if (sessionId) {
-      await fetch('/api/nova-sonic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'end',
-          sessionId
-        })
-      });
-      setSessionId(null);
+    if (websocketRef.current?.readyState === WebSocket.OPEN) {
+      websocketRef.current.send(JSON.stringify({
+        type: 'end_session'
+      }));
+      websocketRef.current.close();
       setIsConnected(false);
       
       // Call the interview end handler

@@ -7,7 +7,12 @@ export async function POST(request: Request) {
     switch (action) {
       case 'start':
         const newSessionId = await novaSonicService.startVoiceSession(interviewData);
-        return Response.json({ success: true, sessionId: newSessionId });
+        const initialGreeting = novaSonicService.getInitialGreeting(newSessionId);
+        return Response.json({ 
+          success: true, 
+          sessionId: newSessionId,
+          initialMessage: initialGreeting
+        });
 
       case 'process':
         if (!sessionId || !audioData) {

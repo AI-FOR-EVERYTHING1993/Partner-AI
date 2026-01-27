@@ -1,4 +1,5 @@
 import { BedrockRuntimeClient, InvokeModelWithBidirectionalStreamCommand } from "@aws-sdk/client-bedrock-runtime";
+import { generateAIFirstPrompt } from "./ai-first-prompts";
 
 interface VoiceSession {
   sessionId: string;
@@ -32,17 +33,22 @@ export class NovaSonicService {
       throw new Error("AWS credentials not configured. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env.local");
     }
     
+    // Generate AI-first prompt
+    const aiPrompt = generateAIFirstPrompt(interviewData, 'PROFESSIONAL');
+    
     const session: VoiceSession = {
       sessionId,
       interviewData,
       conversationHistory: [{
         role: "system",
-        content: `You are an AI interviewer conducting a ${interviewData.role} interview at ${interviewData.level} level. Focus on: ${interviewData.techstack.join(', ')}. Keep responses conversational and under 50 words. Ask one question at a time.`
+        content: aiPrompt.systemPrompt
+      }, {
+        role: "assistant",
+        content: aiPrompt.openingMessage
       }],
       startTime: new Date()
     };
 
-    // For now, skip the complex bidirectional stream and use simple session management
     this.activeSessions.set(sessionId, session);
     return sessionId;
   }
@@ -52,18 +58,22 @@ export class NovaSonicService {
     if (!session) throw new Error("Session not found");
 
     try {
-      // For now, return contextual mock responses based on interview data
-      const responses = [
-        `Tell me about your experience in ${session.interviewData.role}.`,
-        `What interests you most about ${session.interviewData.role} positions?`,
-        `How do you stay updated with industry trends in ${session.interviewData.role}?`,
-        `Describe a challenging project you've worked on.`,
-        `What are your career goals in the next 5 years?`,
-        `How do you handle working under pressure?`,
-        `What makes you a good fit for this role?`
+      // Generate contextual follow-up questions based on conversation flow
+      const followUpQuestions = [
+        `That's interesting! Can you walk me through a specific project where you used ${session.interviewData.techstack[0] || 'your skills'}?`,
+        `Great! How do you approach problem-solving when facing technical challenges?`,
+        `Tell me about a time when you had to learn a new technology quickly. How did you handle it?`,
+        `What's your experience working in a team environment?`,
+        `How do you stay current with industry trends and best practices?`,
+        `Describe a challenging bug or issue you've encountered and how you resolved it.`,
+        `What motivates you most about working in ${session.interviewData.role}?`,
+        `How do you handle tight deadlines and pressure?`,
+        `What are your long-term career goals?`,
+        `Do you have any questions about our company or this role?`
       ];
       
-      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+      const questionIndex = Math.min(session.conversationHistory.length - 2, followUpQuestions.length - 1);
+      const response = followUpQuestions[questionIndex] || "Thank you for sharing. Is there anything else you'd like to add?";
       
       session.conversationHistory.push({ 
         role: "user", 
@@ -71,10 +81,10 @@ export class NovaSonicService {
       });
       session.conversationHistory.push({ 
         role: "assistant", 
-        content: randomResponse 
+        content: response 
       });
 
-      return randomResponse;
+      return response;
     } catch (error) {
       console.error('Error processing voice input:', error);
       return "I'm sorry, I didn't catch that. Could you please repeat your answer?";
@@ -114,8 +124,13 @@ export class NovaSonicService {
     };
   }
 
-  getActiveSession(sessionId: string): VoiceSession | undefined {
-    return this.activeSessions.get(sessionId);
+  getInitialGreeting(sessionId: string): string | null {
+    const session = this.activeSessions.get(sessionId);
+    if (!session) return null;
+    
+    // Return the initial greeting from conversation history
+    const greeting = session.conversationHistory.find(msg => msg.role === "assistant");
+    return greeting?.content || null;
   }
 }
 
