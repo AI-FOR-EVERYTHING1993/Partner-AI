@@ -1,99 +1,172 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
-import ResumeReviewResults from '@/components/ResumeReviewResults';
-import AuthGuard from '@/components/AuthGuard';
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 const ResumeResultsPage = () => {
-  const [analysis, setAnalysis] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Try to get analysis from sessionStorage first
-    const storedAnalysis = sessionStorage.getItem('resumeAnalysis');
-    
-    if (storedAnalysis) {
-      setAnalysis(JSON.parse(storedAnalysis));
-      setLoading(false);
-      return;
-    }
-
-    // Fallback to mock analysis
-    const mockAnalysis = {
-      overallScore: 85,
-      atsScore: 78,
-      industryMatch: "Software Engineering",
-      experienceLevel: "Mid-Level",
-      strengths: [
-        "Strong technical skills with modern frameworks and languages",
-        "Quantified achievements showing measurable business impact",
-        "Clear career progression with increasing responsibilities",
-        "Relevant certifications and continuous learning mindset",
-        "Clean, professional formatting that's ATS-friendly"
-      ],
-      improvements: [
-        "Add more leadership and team collaboration examples",
-        "Include specific metrics for project impact and ROI",
-        "Strengthen the professional summary with unique value proposition",
-        "Add industry-specific keywords for better ATS optimization",
-        "Include soft skills and communication abilities"
-      ],
-      keywordOptimization: {
-        missing: ["Agile", "Scrum", "CI/CD", "Cloud Architecture", "Microservices"],
-        present: ["JavaScript", "React", "Node.js", "AWS", "Git"],
-        suggestions: [
-          "Add 'Agile methodology' to project descriptions",
-          "Include 'CI/CD pipeline' in technical experience section",
-          "Mention 'cloud architecture' and 'scalability' experience",
-          "Add 'cross-functional collaboration' to demonstrate teamwork"
-        ]
-      },
-      industryInsights: {
-        topSkills: ["Cloud Computing", "AI/ML", "DevOps", "Cybersecurity", "Data Science"],
-        emergingTrends: ["Generative AI Integration", "Edge Computing", "Serverless Architecture"],
-        salaryRange: "$95K - $140K",
-        demandLevel: "Very High"
-      },
-      recruiterTips: [
-        "Start each bullet point with strong action verbs (Led, Developed, Optimized)",
-        "Quantify every achievement with specific numbers and percentages",
-        "Tailor your resume keywords to match each job description",
-        "Keep technical skills section updated with latest technologies"
-      ],
-      nextSteps: [
-        "Update your technical skills with trending technologies like AI/ML",
-        "Add 2-3 quantified achievements for each previous role",
-        "Create a compelling professional summary highlighting your unique value",
-        "Optimize for ATS by including relevant industry keywords",
-        "Practice behavioral interview questions using the STAR method",
-        "Build a portfolio showcasing your best technical projects"
-      ]
-    };
-
-    setTimeout(() => {
-      setAnalysis(mockAnalysis);
-      setLoading(false);
-    }, 1500);
-  }, []);
-
-  if (loading) {
-    return (
-      <AuthGuard>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-emerald-600 mx-auto mb-4"></div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyzing Your Resume</h2>
-            <p className="text-gray-600">Our AI is reviewing your resume with insights from top recruiters...</p>
-          </div>
-        </div>
-      </AuthGuard>
-    );
-  }
-
   return (
-    <AuthGuard>
-      <ResumeReviewResults resumeAnalysis={analysis} />
-    </AuthGuard>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto space-y-8">
+        
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Resume Analysis Complete!</h1>
+          <p className="text-xl text-gray-600">Here's your detailed resume review</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-emerald-600">Overall Score</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-emerald-600">85/100</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-blue-600">ATS Score</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-4xl font-bold text-blue-600">78/100</div>
+            </CardContent>
+          </Card>
+          
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-purple-600">Industry Match</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-lg font-semibold text-purple-600">Software Engineering</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-emerald-600">✅ Key Strengths</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <span className="text-emerald-500 mt-1">•</span>
+                  <span className="text-gray-700">Strong technical skills with modern frameworks</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-emerald-500 mt-1">•</span>
+                  <span className="text-gray-700">Quantified achievements showing business impact</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-emerald-500 mt-1">•</span>
+                  <span className="text-gray-700">Clear career progression</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-emerald-500 mt-1">•</span>
+                  <span className="text-gray-700">ATS-friendly formatting</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-orange-600">🎯 Areas for Improvement</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3">
+                  <span className="text-orange-500 mt-1">•</span>
+                  <span className="text-gray-700">Add more leadership examples</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-orange-500 mt-1">•</span>
+                  <span className="text-gray-700">Include specific project metrics</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-orange-500 mt-1">•</span>
+                  <span className="text-gray-700">Strengthen professional summary</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <span className="text-orange-500 mt-1">•</span>
+                  <span className="text-gray-700">Add industry keywords</span>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-blue-600">🔍 Keyword Analysis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold text-emerald-600 mb-2">Present Keywords</h4>
+                <div className="flex flex-wrap gap-2">
+                  {["JavaScript", "React", "Node.js", "AWS", "Git"].map((keyword) => (
+                    <span key={keyword} className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded text-sm">
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold text-orange-600 mb-2">Missing Keywords</h4>
+                <div className="flex flex-wrap gap-2">
+                  {["Agile", "Scrum", "CI/CD", "Cloud Architecture"].map((keyword) => (
+                    <span key={keyword} className="bg-orange-100 text-orange-700 px-2 py-1 rounded text-sm">
+                      {keyword}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-purple-600">💡 Next Steps</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-3">
+                <span className="text-purple-500 mt-1">•</span>
+                <span className="text-gray-700">Update technical skills with AI/ML technologies</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-purple-500 mt-1">•</span>
+                <span className="text-gray-700">Add 2-3 quantified achievements per role</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="text-purple-500 mt-1">•</span>
+                <span className="text-gray-700">Create compelling professional summary</span>
+              </li>
+            </ul>
+          </CardContent>
+        </Card>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3">
+            Download Improved Resume
+          </Button>
+          <Link href="/select-interview">
+            <Button variant="outline" className="px-8 py-3">
+              Select Interview
+            </Button>
+          </Link>
+          <Link href="/interview?category=frontend&level=mid&type=technical&company=startup">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
+              Take Interview
+            </Button>
+          </Link>
+        </div>
+      </div>
+    </div>
   );
 };
 

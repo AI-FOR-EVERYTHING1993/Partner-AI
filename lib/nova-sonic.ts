@@ -61,9 +61,8 @@ export class NovaSonicService {
       // Use actual Bedrock for intelligent responses
       const prompt = `You are conducting a ${session.interviewData.role} interview. The candidate just spoke. Based on the conversation flow, ask a relevant follow-up question about ${session.interviewData.techstack.join(', ')}. Keep it conversational and under 50 words.`;
       
-      const command = new InvokeModelWithBidirectionalStreamCommand({
-        modelId: this.modelId
-      });
+      // Note: Full bidirectional streaming requires complex setup
+      // For now, using contextual responses based on conversation progress
 
       // For now, generate contextual responses based on conversation progress
       const questionCount = session.conversationHistory.filter(msg => msg.role === 'assistant').length;

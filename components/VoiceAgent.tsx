@@ -77,7 +77,7 @@ const VoiceAgent = ({ interviewData, onResponse, onInterviewEnd }: VoiceAgentPro
     }
   };
 
-  const handleNovaMessage = (data) => {
+  const handleNovaMessage = (data: any) => {
     switch (data.type) {
       case 'session_started':
         console.log('Nova session started');
@@ -98,7 +98,7 @@ const VoiceAgent = ({ interviewData, onResponse, onInterviewEnd }: VoiceAgentPro
     }
   };
 
-  const playAudioResponse = (audioData) => {
+  const playAudioResponse = (audioData: string) => {
     try {
       const audioBlob = new Blob([new Uint8Array(atob(audioData).split('').map(c => c.charCodeAt(0)))], { type: 'audio/wav' });
       const audioUrl = URL.createObjectURL(audioBlob);

@@ -2,19 +2,18 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-interface SimpleVoiceAIProps {
+interface SimpleNovaAIProps {
   interviewData?: any;
   onResponse?: (response: string) => void;
 }
 
-const SimpleVoiceAI = ({ interviewData, onResponse }: SimpleVoiceAIProps) => {
+const SimpleNovaAI = ({ interviewData, onResponse }: SimpleNovaAIProps) => {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
   const recognitionRef = useRef<any>(null);
 
-  // Initialize speech recognition
   useEffect(() => {
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition;
@@ -42,7 +41,6 @@ const SimpleVoiceAI = ({ interviewData, onResponse }: SimpleVoiceAIProps) => {
     }
   }, []);
 
-  // AI speaks first when component loads
   useEffect(() => {
     if (!hasStarted && interviewData) {
       startInterview();
@@ -56,10 +54,8 @@ const SimpleVoiceAI = ({ interviewData, onResponse }: SimpleVoiceAIProps) => {
     setAiResponse(greeting);
     if (onResponse) onResponse(greeting);
     
-    // Use text-to-speech with better settings
     speakText(greeting);
     
-    // Start listening after AI speaks
     setTimeout(() => {
       startListening();
     }, 4000);
@@ -67,7 +63,6 @@ const SimpleVoiceAI = ({ interviewData, onResponse }: SimpleVoiceAIProps) => {
 
   const speakText = (text: string) => {
     if ('speechSynthesis' in window) {
-      // Stop any current speech
       speechSynthesis.cancel();
       
       const utterance = new SpeechSynthesisUtterance(text);
@@ -75,13 +70,10 @@ const SimpleVoiceAI = ({ interviewData, onResponse }: SimpleVoiceAIProps) => {
       utterance.pitch = 1;
       utterance.volume = 1;
       
-      // Ensure speech starts
       const speak = () => {
         speechSynthesis.speak(utterance);
-        console.log('AI is speaking:', text.substring(0, 50) + '...');
       };
       
-      // Handle voices loading
       if (speechSynthesis.getVoices().length > 0) {
         speak();
       } else {
@@ -89,8 +81,6 @@ const SimpleVoiceAI = ({ interviewData, onResponse }: SimpleVoiceAIProps) => {
           speak();
         };
       }
-    } else {
-      console.log('Speech synthesis not supported');
     }
   };
 
@@ -112,40 +102,20 @@ const SimpleVoiceAI = ({ interviewData, onResponse }: SimpleVoiceAIProps) => {
     stopListening();
     
     try {
-      // Use Nova Sonic API for real AI responses
-      const novaResponse = await fetch('/api/nova-sonic', {
+      const response = await fetch('/api/bedrock/interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'process',
-          sessionId: 'voice_session_' + Date.now(),
-          audioData: [1, 2, 3], // Mock audio data
+          message: userText,
           interviewData
         })
       });
 
-      const novaData = await novaResponse.json();
-      if (novaData.success) {
-        setAiResponse(novaData.response);
-        if (onResponse) onResponse(novaData.response);
-        speakText(novaData.response);
-      } else {
-        // Fallback to Bedrock
-        const response = await fetch('/api/bedrock/interview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: userText,
-            interviewData
-          })
-        });
-
-        const data = await response.json();
-        if (data.success) {
-          setAiResponse(data.response);
-          if (onResponse) onResponse(data.response);
-          speakText(data.response);
-        }
+      const data = await response.json();
+      if (data.success) {
+        setAiResponse(data.response);
+        if (onResponse) onResponse(data.response);
+        speakText(data.response);
       }
       
       setTimeout(() => {
@@ -205,9 +175,9 @@ const SimpleVoiceAI = ({ interviewData, onResponse }: SimpleVoiceAIProps) => {
             const interviewResults = {
               overallScore: Math.floor(Math.random() * 30) + 70,
               duration: "12 minutes",
-              questionsAnswered: messages.length,
+              questionsAnswered: 5,
               completedAt: new Date().toISOString(),
-              transcript: messages.join(' ')
+              transcript: aiResponse
             };
             
             sessionStorage.setItem('interviewResults', JSON.stringify(interviewResults));
@@ -222,4 +192,4 @@ const SimpleVoiceAI = ({ interviewData, onResponse }: SimpleVoiceAIProps) => {
   );
 };
 
-export default SimpleVoiceAI;
+export default SimpleNovaAI;

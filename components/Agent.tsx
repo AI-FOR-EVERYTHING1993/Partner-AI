@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import SimpleVoiceAI from "./SimpleVoiceAI";
+import SimpleNovaAI from "./SimpleNovaAI";
 
 interface AgentProps {
     userName?: string;
@@ -62,7 +62,7 @@ const Agent = ({ userName = "User", interviewData }: AgentProps) => {
                 </div>
             )}
             
-            <SimpleVoiceAI 
+            <SimpleNovaAI 
                 interviewData={interviewData}
                 onResponse={handleVoiceResponse}
             />

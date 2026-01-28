@@ -1,1 +1,292 @@
-import { createServer } from 'http';\nimport { Server } from 'socket.io';\nimport { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';\nimport { NodeHttp2Handler } from '@smithy/node-http-handler';\n\n// Create HTTP server\nconst httpServer = createServer();\nconst io = new Server(httpServer, {\n  cors: {\n    origin: process.env.NODE_ENV === 'production' ? false : ['http://localhost:3000'],\n    methods: ['GET', 'POST']\n  }\n});\n\n// Nova Sonic client setup\nconst bedrockClient = new BedrockRuntimeClient({\n  region: process.env.AWS_REGION || 'us-east-1',\n  credentials: {\n    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,\n    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!\n  },\n  requestHandler: new NodeHttp2Handler({\n    requestTimeout: 300000,\n    sessionTimeout: 300000\n  })\n});\n\n// Session management\ninterface InterviewSession {\n  sessionId: string;\n  interviewData: any;\n  isActive: boolean;\n  messages: Array<{role: string, content: string}>;\n}\n\nconst activeSessions = new Map<string, InterviewSession>();\n\n// Socket.IO connection handler\nio.on('connection', (socket) => {\n  console.log('Client connected:', socket.id);\n  \n  let currentSession: InterviewSession | null = null;\n\n  socket.on('initializeConnection', (callback) => {\n    try {\n      currentSession = {\n        sessionId: socket.id,\n        interviewData: null,\n        isActive: true,\n        messages: []\n      };\n      \n      activeSessions.set(socket.id, currentSession);\n      console.log('Session initialized:', socket.id);\n      \n      if (callback) callback({ success: true });\n    } catch (error) {\n      console.error('Error initializing session:', error);\n      if (callback) callback({ success: false, error: error });\n    }\n  });\n\n  socket.on('promptStart', () => {\n    console.log('Prompt start for session:', socket.id);\n    // Session setup complete\n  });\n\n  socket.on('systemPrompt', (promptText: string) => {\n    console.log('System prompt received:', promptText.substring(0, 100) + '...');\n    \n    if (currentSession) {\n      currentSession.messages.push({\n        role: 'system',\n        content: promptText\n      });\n      \n      // AI speaks first - send initial greeting\n      setTimeout(() => {\n        const greeting = \"Hello! I'm excited to interview you for this position today. Let's begin - could you tell me a bit about yourself and what drew you to this role?\";\n        \n        currentSession?.messages.push({\n          role: 'assistant', \n          content: greeting\n        });\n        \n        socket.emit('textOutput', { content: greeting });\n      }, 1000);\n    }\n  });\n\n  socket.on('audioStart', () => {\n    console.log('Audio start for session:', socket.id);\n    socket.emit('audioReady');\n  });\n\n  socket.on('audioInput', async (audioData: string) => {\n    try {\n      if (!currentSession) return;\n      \n      // Simulate speech-to-text (in real implementation, use AWS Transcribe)\n      const userText = \"[User spoke - audio received]\";\n      \n      currentSession.messages.push({\n        role: 'user',\n        content: userText\n      });\n      \n      // Generate AI response using Bedrock\n      const aiResponse = await generateInterviewResponse(currentSession);\n      \n      currentSession.messages.push({\n        role: 'assistant',\n        content: aiResponse\n      });\n      \n      // Send response back to client\n      socket.emit('textOutput', { content: aiResponse });\n      \n    } catch (error) {\n      console.error('Error processing audio:', error);\n      socket.emit('error', { message: 'Error processing audio input' });\n    }\n  });\n\n  socket.on('stopAudio', () => {\n    console.log('Stop audio for session:', socket.id);\n    if (currentSession) {\n      currentSession.isActive = false;\n    }\n    socket.emit('sessionClosed');\n  });\n\n  socket.on('disconnect', () => {\n    console.log('Client disconnected:', socket.id);\n    if (currentSession) {\n      activeSessions.delete(socket.id);\n    }\n  });\n});\n\n// Generate AI interview responses\nasync function generateInterviewResponse(session: InterviewSession): Promise<string> {\n  try {\n    const conversationContext = session.messages\n      .filter(m => m.role !== 'system')\n      .map(m => `${m.role}: ${m.content}`)\n      .join('\\n');\n    \n    const prompt = `You are conducting a professional interview. Based on this conversation:\\n\\n${conversationContext}\\n\\nProvide a thoughtful follow-up question or response. Keep it conversational and under 50 words.`;\n    \n    // Use your existing Bedrock service\n    const response = await fetch('http://localhost:3000/api/bedrock/interview', {\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json' },\n      body: JSON.stringify({\n        message: prompt,\n        interviewData: session.interviewData || {\n          role: 'Software Developer',\n          level: 'Senior',\n          techstack: ['JavaScript', 'React']\n        }\n      })\n    });\n    \n    const data = await response.json();\n    return data.success ? data.response : \"Could you tell me more about that?\";\n    \n  } catch (error) {\n    console.error('Error generating response:', error);\n    return \"That's interesting. Could you elaborate on that?\";\n  }\n}\n\n// Start server\nconst PORT = process.env.SOCKET_PORT || 3001;\nhttpServer.listen(PORT, () => {\n  console.log(`Nova Sonic server running on port ${PORT}`);\n});\n\nexport default httpServer;
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { fromIni } from "@aws-sdk/credential-providers";
+import { defaultProvider } from "@aws-sdk/credential-provider-node";
+import { NovaSonicBidirectionalStreamClient, StreamSession } from './nova-client';
+
+const httpServer = createServer();
+const io = new Server(httpServer, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"]
+  }
+});
+
+// Create the AWS Bedrock client
+const bedrockClient = new NovaSonicBidirectionalStreamClient({
+  requestHandlerConfig: {
+    maxConcurrentStreams: 10,
+  },
+  clientConfig: {
+    region: process.env.AWS_REGION || "us-east-1",
+    credentials: process.env.AWS_PROFILE ? fromIni({ profile: process.env.AWS_PROFILE }) : defaultProvider()
+  }
+});
+
+// Track active sessions per socket
+const socketSessions = new Map<string, StreamSession>();
+
+// Session states
+enum SessionState {
+  INITIALIZING = 'initializing',
+  READY = 'ready',
+  ACTIVE = 'active',
+  CLOSED = 'closed'
+}
+
+const sessionStates = new Map<string, SessionState>();
+
+// Helper function to create and initialize a new session
+async function createNewSession(socket: any): Promise<StreamSession> {
+  const sessionId = socket.id;
+
+  try {
+    console.log(`Creating new session for client: ${sessionId}`);
+    sessionStates.set(sessionId, SessionState.INITIALIZING);
+
+    // Create session
+    const session = bedrockClient.createStreamSession(sessionId);
+
+    // Set up event handlers
+    setupSessionEventHandlers(session, socket);
+
+    // Store the session
+    socketSessions.set(sessionId, session);
+    sessionStates.set(sessionId, SessionState.READY);
+
+    console.log(`Session ${sessionId} created and ready`);
+    return session;
+  } catch (error) {
+    console.error(`Error creating session for ${sessionId}:`, error);
+    sessionStates.set(sessionId, SessionState.CLOSED);
+    throw error;
+  }
+}
+
+// Helper function to set up event handlers for a session
+function setupSessionEventHandlers(session: StreamSession, socket: any) {
+  session.onEvent('usageEvent', (data) => {
+    socket.emit('usageEvent', data);
+  });
+
+  session.onEvent('completionStart', (data) => {
+    socket.emit('completionStart', data);
+  });
+
+  session.onEvent('contentStart', (data) => {
+    socket.emit('contentStart', data);
+  });
+
+  session.onEvent('textOutput', (data) => {
+    console.log('Text output:', data);
+    socket.emit('textOutput', data);
+  });
+
+  session.onEvent('audioOutput', (data) => {
+    console.log('Audio output received, sending to client');
+    socket.emit('audioOutput', data);
+  });
+
+  session.onEvent('error', (data) => {
+    console.error('Error in session:', data);
+    socket.emit('error', data);
+  });
+
+  session.onEvent('contentEnd', (data) => {
+    console.log('Content end received: ', data);
+    socket.emit('contentEnd', data);
+  });
+
+  session.onEvent('streamComplete', () => {
+    console.log('Stream completed for client:', socket.id);
+    socket.emit('streamComplete');
+    sessionStates.set(socket.id, SessionState.CLOSED);
+  });
+}
+
+// Socket.IO connection handler
+io.on('connection', (socket) => {
+  console.log('New client connected:', socket.id);
+  sessionStates.set(socket.id, SessionState.CLOSED);
+
+  // Handle session initialization request
+  socket.on('initializeConnection', async (callback) => {
+    try {
+      const currentState = sessionStates.get(socket.id);
+      console.log(`Initializing session for ${socket.id}, current state: ${currentState}`);
+      
+      if (currentState === SessionState.INITIALIZING || currentState === SessionState.READY || currentState === SessionState.ACTIVE) {
+        console.log(`Session already exists for ${socket.id}, state: ${currentState}`);
+        if (callback) callback({ success: true });
+        return;
+      }
+
+      await createNewSession(socket);
+
+      // Start the AWS Bedrock connection
+      console.log(`Starting AWS Bedrock connection for ${socket.id}`);
+      bedrockClient.initiateBidirectionalStreaming(socket.id);
+
+      // Update state to active
+      sessionStates.set(socket.id, SessionState.ACTIVE);
+
+      if (callback) callback({ success: true });
+
+    } catch (error) {
+      console.error('Error initializing session:', error);
+      sessionStates.set(socket.id, SessionState.CLOSED);
+      if (callback) callback({ success: false, error: error instanceof Error ? error.message : String(error) });
+      socket.emit('error', {
+        message: 'Failed to initialize session',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Audio input handler
+  socket.on('audioInput', async (audioData) => {
+    try {
+      const session = socketSessions.get(socket.id);
+      const currentState = sessionStates.get(socket.id);
+
+      if (!session || currentState !== SessionState.ACTIVE) {
+        console.error(`Invalid session state for audio input: session=${!!session}, state=${currentState}`);
+        socket.emit('error', {
+          message: 'No active session for audio input',
+          details: `Session exists: ${!!session}, Session state: ${currentState}`
+        });
+        return;
+      }
+
+      // Convert base64 string to Buffer
+      const audioBuffer = typeof audioData === 'string'
+        ? Buffer.from(audioData, 'base64')
+        : Buffer.from(audioData);
+
+      // Stream the audio
+      await session.streamAudio(audioBuffer);
+
+    } catch (error) {
+      console.error('Error processing audio:', error);
+      socket.emit('error', {
+        message: 'Error processing audio',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  socket.on('promptStart', async () => {
+    try {
+      const session = socketSessions.get(socket.id);
+      if (!session) {
+        socket.emit('error', { message: 'No active session for prompt start' });
+        return;
+      }
+
+      await session.setupSessionAndPromptStart();
+      console.log(`Prompt start completed for ${socket.id}`);
+    } catch (error) {
+      console.error('Error processing prompt start:', error);
+      socket.emit('error', {
+        message: 'Error processing prompt start',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  socket.on('systemPrompt', async (data) => {
+    try {
+      const session = socketSessions.get(socket.id);
+      if (!session) {
+        socket.emit('error', { message: 'No active session for system prompt' });
+        return;
+      }
+
+      await session.setupSystemPrompt(undefined, data);
+      console.log(`System prompt completed for ${socket.id}`);
+    } catch (error) {
+      console.error('Error processing system prompt:', error);
+      socket.emit('error', {
+        message: 'Error processing system prompt',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  socket.on('audioStart', async () => {
+    try {
+      const session = socketSessions.get(socket.id);
+      if (!session) {
+        socket.emit('error', { message: 'No active session for audio start' });
+        return;
+      }
+
+      await session.setupStartAudio();
+      console.log(`Audio start setup completed for ${socket.id}`);
+      socket.emit('audioReady');
+    } catch (error) {
+      console.error('Error processing audio start:', error);
+      sessionStates.set(socket.id, SessionState.CLOSED);
+      socket.emit('error', {
+        message: 'Error processing audio start',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  socket.on('stopAudio', async () => {
+    try {
+      const session = socketSessions.get(socket.id);
+      if (!session) {
+        console.log('No active session to stop');
+        return;
+      }
+
+      console.log('Stop audio requested, beginning shutdown sequence');
+      sessionStates.set(socket.id, SessionState.CLOSED);
+
+      await session.endAudioContent();
+      await session.endPrompt();
+      await session.close();
+
+      socketSessions.delete(socket.id);
+      socket.emit('sessionClosed');
+
+    } catch (error) {
+      console.error('Error processing streaming end events:', error);
+      socket.emit('error', {
+        message: 'Error processing streaming end events',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Handle disconnection
+  socket.on('disconnect', async () => {
+    console.log('Client disconnected:', socket.id);
+
+    const session = socketSessions.get(socket.id);
+    if (session && bedrockClient.isSessionActive(socket.id)) {
+      try {
+        await session.endAudioContent();
+        await session.endPrompt();
+        await session.close();
+      } catch (error) {
+        console.error(`Error cleaning up session after disconnect: ${socket.id}`, error);
+        bedrockClient.forceCloseSession(socket.id);
+      }
+    }
+
+    socketSessions.delete(socket.id);
+    sessionStates.delete(socket.id);
+  });
+});
+
+// Start the server
+const PORT = process.env.NOVA_SOCKET_PORT || 3001;
+httpServer.listen(PORT, () => {
+  console.log(`Nova Sonic WebSocket server listening on port ${PORT}`);
+  console.log(`Make sure your Next.js app is running on port 3000`);
+});
+
+export { io, httpServer };

@@ -6,11 +6,12 @@ import Link from "next/link";
 
 const HomePage = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-100 via-emerald-200 to-green-200">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
         <div className="flex items-center">
+          <img src="/logo-image.jpg" alt="Logo" className="w-8 h-8 mr-2" />
           <div className="text-2xl font-bold text-gray-900">Partner AI</div>
         </div>
         
@@ -20,6 +21,9 @@ const HomePage = () => {
           </Link>
           <Link href="#features" className="text-gray-600 hover:text-gray-900 transition-colors font-bold">
             Features
+          </Link>
+          <Link href="#resources" className="text-gray-600 hover:text-gray-900 transition-colors font-bold">
+            Resources
           </Link>
           <Link href="#pricing" className="text-gray-600 hover:text-gray-900 transition-colors font-bold">
             Pricing
@@ -44,7 +48,7 @@ const HomePage = () => {
       {/* Hero Section */}
       <section className="px-6 pt-32 pb-20 text-center max-w-4xl mx-auto">
         <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-          Master Any Interview with
+          Master Any Talk and Interview with
           <span className="text-emerald-600"> AI-Powered</span> Practice
         </h1>
         
@@ -87,35 +91,35 @@ const HomePage = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="px-6 py-16 bg-white">
+      <section className="px-6 py-16">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
-              <div className="text-3xl font-bold text-emerald-600 mb-2">10K+</div>
-              <div className="text-gray-600">Interviews Practiced</div>
+              <div className="text-3xl font-bold text-emerald-700 mb-2">10K+</div>
+              <div className="text-emerald-800">Interviews Practiced</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-emerald-600 mb-2">95%</div>
-              <div className="text-gray-600">Success Rate</div>
+              <div className="text-3xl font-bold text-emerald-700 mb-2">95%</div>
+              <div className="text-emerald-800">Success Rate</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-emerald-600 mb-2">50+</div>
-              <div className="text-gray-600">Industries Covered</div>
+              <div className="text-3xl font-bold text-emerald-700 mb-2">50+</div>
+              <div className="text-emerald-800">Industries Covered</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-emerald-600 mb-2">24/7</div>
-              <div className="text-gray-600">AI Availability</div>
+              <div className="text-3xl font-bold text-emerald-700 mb-2">24/7</div>
+              <div className="text-emerald-800">AI Availability</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* How it Works Section */}
-      <section id="how-it-works" className="px-6 py-20 bg-gray-50">
+      <section id="how-it-works" className="px-6 py-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">How it Works</h2>
-            <p className="text-xl text-gray-600">Three simple steps to interview success</p>
+            <h2 className="text-4xl font-bold text-emerald-900 mb-4">How it Works</h2>
+            <p className="text-xl text-emerald-800">Three simple steps to interview success</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -155,72 +159,114 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="px-6 py-20 bg-white">
+      {/* Resources Section */}
+      <section id="resources" className="px-6 py-20">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Powerful Features</h2>
-            <p className="text-xl text-gray-600">Everything you need to ace your next interview</p>
+            <h2 className="text-4xl font-bold text-emerald-900 mb-4">Interview Resources</h2>
+            <p className="text-xl text-emerald-800">Everything you need to succeed in your interviews</p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-emerald-600 text-2xl">🤖</span>
+                <span className="text-emerald-600 text-2xl">📚</span>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Powered Analysis</h3>
-              <p className="text-gray-600">Smart resume analysis and personalized interview recommendations powered by AWS Bedrock</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Study Guides</h3>
+              <p className="text-gray-600">Comprehensive guides covering technical concepts, behavioral questions, and industry-specific topics</p>
             </div>
 
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-emerald-600 text-2xl">🎯</span>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Industry-Specific</h3>
-              <p className="text-gray-600">Practice for tech, finance, healthcare, consulting, and more industries with tailored questions</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Practice Questions</h3>
+              <p className="text-gray-600">Curated question banks for different roles and experience levels with detailed explanations</p>
             </div>
 
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-lg transition-shadow">
               <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-emerald-600 text-2xl">📊</span>
+                <span className="text-emerald-600 text-2xl">💡</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Expert Tips</h3>
+              <p className="text-gray-600">Insider advice from hiring managers and industry professionals to give you the edge</p>
+            </div>
+          </div>
+
+          <div className="text-center mt-12">
+            <Link href="/resources">
+              <Button className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 text-lg font-semibold">
+                Explore All Resources
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+      <section id="features" className="px-6 py-20">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-emerald-900 mb-4">Powerful Features</h2>
+            <p className="text-xl text-emerald-800">Everything you need to ace your next interview</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl shadow-lg border border-emerald-200 hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mb-4 shadow-md">
+                <span className="text-emerald-100 text-2xl">🤖</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">AI-Powered Analysis</h3>
+              <p className="text-gray-700">Smart resume analysis and personalized interview recommendations powered by AWS Bedrock</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl shadow-lg border border-emerald-200 hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mb-4 shadow-md">
+                <span className="text-emerald-100 text-2xl">🎯</span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Industry-Specific</h3>
+              <p className="text-gray-700">Practice for tech, finance, healthcare, consulting, and more industries with tailored questions</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl shadow-lg border border-emerald-200 hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mb-4 shadow-md">
+                <span className="text-emerald-100 text-2xl">📊</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Detailed Feedback</h3>
-              <p className="text-gray-600">Get scored feedback and improvement suggestions with confidence metrics</p>
+              <p className="text-gray-700">Get scored feedback and improvement suggestions with confidence metrics</p>
             </div>
 
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-emerald-600 text-2xl">🎤</span>
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl shadow-lg border border-emerald-200 hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mb-4 shadow-md">
+                <span className="text-emerald-100 text-2xl">🎤</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Voice Practice</h3>
-              <p className="text-gray-600">Practice speaking with our AI interviewer using Vapi for realistic voice experience</p>
+              <p className="text-gray-700">Practice speaking with our AI interviewer using Vapi for realistic voice experience</p>
             </div>
 
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-emerald-600 text-2xl">📈</span>
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl shadow-lg border border-emerald-200 hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mb-4 shadow-md">
+                <span className="text-emerald-100 text-2xl">📈</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Progress Tracking</h3>
-              <p className="text-gray-600">Monitor your improvement over time with detailed analytics and performance history</p>
+              <p className="text-gray-700">Monitor your improvement over time with detailed analytics and performance history</p>
             </div>
 
-            <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center mb-4">
-                <span className="text-emerald-600 text-2xl">📝</span>
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-xl shadow-lg border border-emerald-200 hover:shadow-xl transition-shadow">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-lg flex items-center justify-center mb-4 shadow-md">
+                <span className="text-emerald-100 text-2xl">📝</span>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Resume Enhancement</h3>
-              <p className="text-gray-600">Get AI-powered suggestions to improve your resume and stand out to employers</p>
+              <p className="text-gray-700">Get AI-powered suggestions to improve your resume and stand out to employers</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="px-6 py-20 bg-gray-50">
+      <section className="px-6 py-20">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Success Stories</h2>
-            <p className="text-xl text-gray-600">See how Partner AI helped others land their dream jobs</p>
+            <h2 className="text-4xl font-bold text-emerald-900 mb-4">Success Stories</h2>
+            <p className="text-xl text-emerald-800">See how Partner AI helped others land their dream jobs</p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
@@ -261,77 +307,146 @@ const HomePage = () => {
 
       {/* Pricing Section */}
       <section id="pricing" className="px-6 py-20 bg-white">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Simple Pricing</h2>
-            <p className="text-xl text-gray-600">Choose the plan that works for you</p>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">Choose Your Experience Level</h2>
+            <p className="text-xl text-gray-600">Tailored interview prep for every career stage</p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-gray-50 p-8 rounded-2xl border border-gray-200">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Free</h3>
-              <p className="text-gray-600 mb-6">Perfect for getting started</p>
-              <div className="text-4xl font-bold text-gray-900 mb-6">$0<span className="text-lg text-gray-500">/month</span></div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Beginner Plan */}
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-8 rounded-2xl border border-blue-200 hover:shadow-lg transition-shadow">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-white text-2xl">🌱</span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Beginner</h3>
+                <p className="text-gray-600 mb-4">Perfect for early career professionals</p>
+                <div className="text-sm text-blue-600 font-semibold mb-2">0-2 Years Experience</div>
+                <div className="text-4xl font-bold text-gray-900 mb-2">$2.99</div>
+                <p className="text-sm text-gray-500">Unlimited access for 24 hours</p>
+              </div>
               
               <ul className="space-y-3 mb-8">
-                <li className="flex items-center text-gray-600">
-                  <span className="text-emerald-600 mr-3">✓</span>
-                  3 practice interviews per month
+                <li className="flex items-center text-gray-700">
+                  <span className="text-blue-600 mr-3">✓</span>
+                  Entry-level focused questions
                 </li>
-                <li className="flex items-center text-gray-600">
-                  <span className="text-emerald-600 mr-3">✓</span>
-                  Basic feedback and scoring
+                <li className="flex items-center text-gray-700">
+                  <span className="text-blue-600 mr-3">✓</span>
+                  Basic behavioral interviews
                 </li>
-                <li className="flex items-center text-gray-600">
-                  <span className="text-emerald-600 mr-3">✓</span>
-                  Resume analysis
+                <li className="flex items-center text-gray-700">
+                  <span className="text-blue-600 mr-3">✓</span>
+                  Resume optimization tips
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-blue-600 mr-3">✓</span>
+                  Confidence building exercises
                 </li>
               </ul>
               
               <Link href="/sign-up">
-                <Button variant="outline" className="w-full border-gray-300 text-gray-700">
-                  Get Started Free
+                <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                  Start Your Journey
                 </Button>
               </Link>
             </div>
 
-            <div className="bg-emerald-600 p-8 rounded-2xl text-white relative">
+            {/* Mid-Level Plan */}
+            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-8 rounded-2xl border border-emerald-200 hover:shadow-lg transition-shadow relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
                   Most Popular
                 </span>
               </div>
               
-              <h3 className="text-2xl font-bold mb-2">Pro</h3>
-              <p className="text-emerald-100 mb-6">For serious job seekers</p>
-              <div className="text-4xl font-bold mb-6">$19<span className="text-lg text-emerald-200">/month</span></div>
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-white text-2xl">🚀</span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Mid-Level</h3>
+                <p className="text-gray-600 mb-4">Advance your career with confidence</p>
+                <div className="text-sm text-emerald-600 font-semibold mb-2">3-6 Years Experience</div>
+                <div className="text-4xl font-bold text-gray-900 mb-2">$7.99</div>
+                <p className="text-sm text-gray-500">Unlimited access for 24 hours</p>
+              </div>
               
               <ul className="space-y-3 mb-8">
-                <li className="flex items-center">
-                  <span className="text-emerald-200 mr-3">✓</span>
-                  Unlimited practice interviews
+                <li className="flex items-center text-gray-700">
+                  <span className="text-emerald-600 mr-3">✓</span>
+                  Advanced technical scenarios
                 </li>
-                <li className="flex items-center">
-                  <span className="text-emerald-200 mr-3">✓</span>
-                  Advanced AI feedback & analytics
+                <li className="flex items-center text-gray-700">
+                  <span className="text-emerald-600 mr-3">✓</span>
+                  Leadership & teamwork questions
                 </li>
-                <li className="flex items-center">
-                  <span className="text-emerald-200 mr-3">✓</span>
-                  Industry-specific questions
+                <li className="flex items-center text-gray-700">
+                  <span className="text-emerald-600 mr-3">✓</span>
+                  Salary negotiation strategies
                 </li>
-                <li className="flex items-center">
-                  <span className="text-emerald-200 mr-3">✓</span>
-                  Resume enhancement suggestions
+                <li className="flex items-center text-gray-700">
+                  <span className="text-emerald-600 mr-3">✓</span>
+                  Industry-specific deep dives
                 </li>
-                <li className="flex items-center">
-                  <span className="text-emerald-200 mr-3">✓</span>
-                  Priority support
+                <li className="flex items-center text-gray-700">
+                  <span className="text-emerald-600 mr-3">✓</span>
+                  Performance review prep
                 </li>
               </ul>
               
-              <Button className="w-full bg-white text-emerald-600 hover:bg-gray-100">
-                Start Pro Trial
-              </Button>
+              <Link href="/sign-up">
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                  Level Up Your Career
+                </Button>
+              </Link>
+            </div>
+
+            {/* Expert Plan */}
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-8 rounded-2xl border border-purple-200 hover:shadow-lg transition-shadow">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-white text-2xl">👑</span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Expert</h3>
+                <p className="text-gray-600 mb-4">Master executive-level interviews</p>
+                <div className="text-sm text-purple-600 font-semibold mb-2">6+ Years Experience</div>
+                <div className="text-4xl font-bold text-gray-900 mb-2">$19</div>
+                <p className="text-sm text-gray-500">Unlimited access for 24 hours</p>
+              </div>
+              
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center text-gray-700">
+                  <span className="text-purple-600 mr-3">✓</span>
+                  C-suite & executive interviews
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-purple-600 mr-3">✓</span>
+                  Strategic thinking assessments
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-purple-600 mr-3">✓</span>
+                  Board presentation practice
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-purple-600 mr-3">✓</span>
+                  Crisis management scenarios
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-purple-600 mr-3">✓</span>
+                  Executive presence coaching
+                </li>
+                <li className="flex items-center text-gray-700">
+                  <span className="text-purple-600 mr-3">✓</span>
+                  Priority support & feedback
+                </li>
+              </ul>
+              
+              <Link href="/sign-up">
+                <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white">
+                  Master Your Interview
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -356,7 +471,7 @@ const HomePage = () => {
       <footer className="px-6 py-12 bg-gray-900 text-white">
         <div className="max-w-6xl mx-auto text-center">
           <div className="text-2xl font-bold mb-4">Partner AI</div>
-          <p className="text-gray-400 mb-8">Master any interview with AI-powered practice</p>
+          <p className="text-gray-400 mb-8">Master any talk and interview with AI-powered practice</p>
           
           <div className="flex justify-center space-x-8 text-gray-400">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
