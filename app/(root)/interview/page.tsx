@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Agent from '@/components/Agent';
-import { useNovaS2S } from '@/hooks/useNovaS2S';
+import { useSimpleNova } from '@/hooks/useSimpleNova';
 import { TECHNICAL_INTERVIEWS, NON_TECHNICAL_INTERVIEWS, EXPERIENCE_LEVELS } from '@/constants/interviews';
 
 interface InterviewData {
@@ -25,24 +25,26 @@ const InterviewPage = () => {
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
   
   const {
+    connectionState,
+    transcripts,
+    error,
+    isConnected,
     isListening,
     isProcessing,
-    transcripts,
+    isSpeaking,
+    connect,
+    disconnect,
     startListening,
     stopListening,
     clearTranscripts,
-  } = useNovaS2S({
+  } = useSimpleNova({
     interviewContext: interviewData ? {
       role: interviewData.role,
       level: interviewData.level,
       techstack: interviewData.techstack,
+      type: interviewData.type,
     } : undefined,
-    onUserTranscript: (text: string) => {
-      console.log('User said:', text);
-    },
-    onAssistantResponse: (text: string) => {
-      console.log('Interviewer:', text);
-    },
+    onError: (err) => console.error('Nova error:', err),
   });
 
   useEffect(() => {
@@ -71,18 +73,6 @@ const InterviewPage = () => {
         };
         
         setInterviewData(newInterviewData);
-        
-        // Add welcome message when interview data is set
-        setTimeout(() => {
-          const welcomeMessage = {
-            role: 'assistant' as const,
-            text: `Hello! Welcome to your ${newInterviewData.role} interview. I'm excited to learn more about your experience with ${newInterviewData.techstack.join(', ')}. Let's start with you telling me a bit about yourself and your background. When you're ready, click "Start Speaking" to begin.`,
-            timestamp: new Date()
-          };
-          
-          // This will be handled by the useNovaS2S hook's onAssistantResponse
-          console.log('AI Interviewer:', welcomeMessage.text);
-        }, 1000);
       }
     }
   }, [searchParams]);
@@ -118,73 +108,68 @@ const InterviewPage = () => {
           </p>
         </div>
 
-        {/* Speech Controls */}
-        <div className="flex gap-4 mb-6 justify-center">
-          <button
-            onClick={isListening ? stopListening : startListening}
-            disabled={isProcessing}
-            className={`px-6 py-3 rounded-lg font-semibold transition-all ${
-              isProcessing
-                ? 'bg-gray-600 cursor-not-allowed'
-                : isListening
-                ? 'bg-red-600 hover:bg-red-700'
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {isProcessing ? (
-              <>
-                <div className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                Processing...
-              </>
-            ) : isListening ? (
-              <>
-                <div className="inline-block w-4 h-4 bg-red-500 rounded-full animate-pulse mr-2"></div>
-                Stop Speaking
-              </>
-            ) : (
-              <>
-                🎙️ Start Speaking
-              </>
-            )}
-          </button>
-
-          {transcripts.length > 0 && (
-            <button
-              onClick={clearTranscripts}
-              className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-all"
-            >
-              🗑️ Clear
-            </button>
-          )}
-
-          <button
-            onClick={() => {
-              const interviewResults = {
-                overallScore: Math.floor(Math.random() * 30) + 70,
-                duration: "12 minutes",
-                questionsAnswered: transcripts.length,
-                completedAt: new Date().toISOString(),
-                transcript: transcripts.map(t => `${t.role}: ${t.text}`).join('\n')
-              };
-              
-              sessionStorage.setItem('interviewResults', JSON.stringify(interviewResults));
-              window.location.href = '/interview-results';
-            }}
-            className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg transition-all text-white font-semibold"
-          >
-            ✅ End Interview
-          </button>
+        {/* Connection Status */}
+        <div className="flex justify-center mb-6">
+          <div className={`px-4 py-2 rounded-full text-sm font-medium ${
+            connectionState === 'connected' ? 'bg-green-900 text-green-300' :
+            connectionState === 'listening' ? 'bg-red-900 text-red-300' :
+            connectionState === 'processing' ? 'bg-blue-900 text-blue-300' :
+            connectionState === 'speaking' ? 'bg-purple-900 text-purple-300' :
+            connectionState === 'error' ? 'bg-red-900 text-red-300' :
+            'bg-gray-700 text-gray-300'
+          }`}>
+            {connectionState === 'connected' && '🟢 Ready'}
+            {connectionState === 'listening' && '🔴 Listening...'}
+            {connectionState === 'processing' && '🔵 Processing...'}
+            {connectionState === 'speaking' && '🟣 Speaking...'}
+            {connectionState === 'error' && '🔴 Error'}
+            {connectionState === 'disconnected' && '⚪ Disconnected'}
+          </div>
         </div>
 
-        {/* Status Indicator */}
-        {isListening && (
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center px-4 py-2 bg-red-600 rounded-full">
-              <div className="w-3 h-3 bg-white rounded-full animate-pulse mr-2"></div>
-              Recording...
-            </div>
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 mb-6 text-center">
+            <p className="text-red-300">⚠️ {error}</p>
           </div>
         )}
+
+        {/* Speech Controls */}
+        <div className="flex gap-4 mb-6 justify-center">
+          {!isConnected ? (
+            <button
+              onClick={connect}
+              className="px-8 py-4 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-all"
+            >
+              🎙️ Start Interview
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={isListening ? stopListening : startListening}
+                disabled={isProcessing || isSpeaking}
+                className={`px-8 py-4 rounded-lg font-semibold transition-all ${
+                  isListening
+                    ? 'bg-red-600 hover:bg-red-700 animate-pulse'
+                    : isProcessing || isSpeaking
+                    ? 'bg-gray-600 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {isListening ? '⏹️ Stop' : isProcessing ? '⏳ Processing...' : isSpeaking ? '🔊 Speaking...' : '🎤 Speak'}
+              </button>
+
+              <button
+                onClick={disconnect}
+                className="px-6 py-4 bg-gray-700 hover:bg-gray-600 rounded-lg font-semibold transition-all"
+              >
+                ✖️ End
+              </button>
+            </>
+          )}
+        </div>
+
+
 
         {/* Conversation Transcript */}
         <div className="bg-gray-800 rounded-lg p-6 mb-8">
@@ -199,47 +184,73 @@ const InterviewPage = () => {
           
           <div className="space-y-4 max-h-96 overflow-y-auto">
             {transcripts.length === 0 ? (
-              <div className="text-center text-gray-400 py-8">
-                <div className="text-4xl mb-2">🎤</div>
-                <div className="text-lg mb-1">Ready to start your interview</div>
-                <div className="text-sm">Click "Start Speaking" to begin</div>
+              <div className="text-center text-gray-400 py-12">
+                <div className="text-5xl mb-4">🎤</div>
+                <p className="text-lg">Ready to start your interview</p>
+                <p className="text-sm mt-2">Click "Start Interview" to begin</p>
               </div>
             ) : (
-              transcripts.map((entry, index) => (
-                <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-lg">
-                      {entry.role === 'user' ? '👤' : '🤖'}
-                    </span>
-                    <span className="font-semibold">
+              transcripts.map((entry) => (
+                <div
+                  key={entry.id}
+                  className={`p-4 rounded-lg ${
+                    entry.role === 'user'
+                      ? 'bg-blue-900/30 border-l-4 border-blue-500 ml-4'
+                      : 'bg-gray-700/50 border-l-4 border-green-500 mr-4'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span>{entry.role === 'user' ? '👤' : '🤖'}</span>
+                    <span className="font-medium">
                       {entry.role === 'user' ? 'You' : 'Interviewer'}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-gray-500">
                       {entry.timestamp.toLocaleTimeString()}
                     </span>
                   </div>
-                  <div className="text-gray-300">
-                    {entry.text}
-                  </div>
+                  <p className="text-gray-200">{entry.text}</p>
                 </div>
               ))
             )}
           </div>
 
-          {/* Export Transcript Button */}
+          {/* Export */}
           {transcripts.length > 0 && (
-            <div className="mt-4 text-center">
+            <div className="mt-6 flex gap-4 justify-center">
               <button
                 onClick={() => {
                   const text = transcripts
                     .map(t => `[${t.role.toUpperCase()}]: ${t.text}`)
                     .join('\n\n');
                   navigator.clipboard.writeText(text);
-                  alert('Transcript copied to clipboard!');
+                  alert('Transcript copied!');
                 }}
-                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-all"
+                className="px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg"
               >
                 📋 Copy Transcript
+              </button>
+              <button
+                onClick={clearTranscripts}
+                className="px-6 py-3 bg-red-700 hover:bg-red-600 rounded-lg"
+              >
+                🗑️ Clear
+              </button>
+              <button
+                onClick={() => {
+                  const interviewResults = {
+                    overallScore: Math.floor(Math.random() * 30) + 70,
+                    duration: "12 minutes",
+                    questionsAnswered: transcripts.length,
+                    completedAt: new Date().toISOString(),
+                    transcript: transcripts.map(t => `${t.role}: ${t.text}`).join('\n')
+                  };
+                  
+                  sessionStorage.setItem('interviewResults', JSON.stringify(interviewResults));
+                  window.location.href = '/interview-results';
+                }}
+                className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg"
+              >
+                ✅ End & View Results
               </button>
             </div>
           )}

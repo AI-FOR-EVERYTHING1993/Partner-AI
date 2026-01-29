@@ -1,34 +1,36 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-
-interface TranscriptEntry {
-  role: 'user' | 'assistant';
-  text: string;
-  timestamp: Date;
-  audioUrl?: string;
-}
+import { AudioPlayer, AudioRecorder } from '@/lib/nova/audio-utils';
+import { TranscriptEntry, ConnectionState, InterviewContext } from '@/lib/nova/types';
 
 interface UseNovaS2SOptions {
   onUserTranscript?: (text: string) => void;
   onAssistantResponse?: (text: string) => void;
-  interviewContext?: {
-    role: string;
-    level: string;
-    techstack: string[];
-  };
+  onError?: (error: string) => void;
+  interviewContext?: InterviewContext;
 }
 
 export const useNovaS2S = (options: UseNovaS2SOptions = {}) => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
-  const [currentTranscript, setCurrentTranscript] = useState('');
+  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
+  const [error, setError] = useState<string | null>(null);
   const [hasInitialized, setHasInitialized] = useState(false);
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
+  const audioRecorderRef = useRef<AudioRecorder | null>(null);
+  const audioPlayerRef = useRef<AudioPlayer | null>(null);
+
+  // Initialize audio components
+  useEffect(() => {
+    audioRecorderRef.current = new AudioRecorder();
+    audioPlayerRef.current = new AudioPlayer();
+
+    return () => {
+      audioPlayerRef.current?.stop();
+    };
+  }, []);
 
   // Add welcome message when interview context is available
   useEffect(() => {
@@ -42,19 +44,15 @@ export const useNovaS2S = (options: UseNovaS2SOptions = {}) => {
       setTranscripts([welcomeMessage]);
       setHasInitialized(true);
       
-      if (options.onAssistantResponse) {
-        options.onAssistantResponse(welcomeMessage.text);
-      }
+      options.onAssistantResponse?.(welcomeMessage.text);
       
-      // Simulate AI speaking the welcome message
-      // In production, this would come from Nova S2S audio output
+      // Use browser speech synthesis as fallback
       if ('speechSynthesis' in window) {
         const utterance = new SpeechSynthesisUtterance(welcomeMessage.text);
         utterance.rate = 0.9;
         utterance.pitch = 1;
         utterance.volume = 0.8;
         
-        // Use a professional voice if available
         const voices = speechSynthesis.getVoices();
         const professionalVoice = voices.find(voice => 
           voice.name.includes('Microsoft') || voice.name.includes('Google')
@@ -70,151 +68,112 @@ export const useNovaS2S = (options: UseNovaS2SOptions = {}) => {
 
   const startListening = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-        } 
-      });
-      
-      streamRef.current = stream;
-      audioChunksRef.current = [];
-
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus',
-      });
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        await processAudio();
-      };
-
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start(100);
+      setError(null);
+      setConnectionState('connecting');
       setIsListening(true);
-
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-    }
-  }, []);
-
-  const stopListening = useCallback(() => {
-    if (mediaRecorderRef.current && isListening) {
-      mediaRecorderRef.current.stop();
-      streamRef.current?.getTracks().forEach(track => track.stop());
+      await audioRecorderRef.current?.start();
+      setConnectionState('connected');
+    } catch (err: any) {
+      setError(err.message || 'Failed to start recording');
       setIsListening(false);
+      setConnectionState('error');
+      options.onError?.(err.message);
     }
-  }, [isListening]);
+  }, [options]);
 
-  const processAudio = async () => {
-    if (audioChunksRef.current.length === 0) return;
+  const stopListening = useCallback(async () => {
+    if (!audioRecorderRef.current?.isRecording()) return;
 
+    setIsListening(false);
     setIsProcessing(true);
 
     try {
-      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      const base64Audio = await blobToBase64(audioBlob);
-
-      // Send to API route
+      const audioBase64 = await audioRecorderRef.current.stop();
+      
+      // Send to API
       const response = await fetch('/api/nova-s2s', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          audio: base64Audio,
+          audio: audioBase64,
           context: options.interviewContext,
-          conversationHistory: transcripts,
+          conversationHistory: transcripts.map((t) => ({
+            role: t.role,
+            text: t.text,
+          })),
         }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to process audio');
+      }
 
       const data = await response.json();
 
       // Add user transcript
       if (data.userTranscript) {
-        setTranscripts(prev => [...prev, {
+        const userEntry: TranscriptEntry = {
           role: 'user',
           text: data.userTranscript,
           timestamp: new Date(),
-        }]);
+        };
+        setTranscripts((prev) => [...prev, userEntry]);
         options.onUserTranscript?.(data.userTranscript);
       }
 
       // Add assistant response
       if (data.assistantText) {
-        setTranscripts(prev => [...prev, {
+        const assistantEntry: TranscriptEntry = {
           role: 'assistant',
           text: data.assistantText,
           timestamp: new Date(),
-          audioUrl: data.audioUrl,
-        }]);
+        };
+        setTranscripts((prev) => [...prev, assistantEntry]);
         options.onAssistantResponse?.(data.assistantText);
 
         // Play audio response
         if (data.audioBase64) {
-          await playAudio(data.audioBase64);
+          await audioPlayerRef.current?.playBase64Audio(data.audioBase64);
         }
       }
-
-    } catch (error) {
-      console.error('Error processing audio:', error);
+    } catch (err: any) {
+      console.error('Error processing audio:', err);
+      setError(err.message);
+      options.onError?.(err.message);
     } finally {
       setIsProcessing(false);
-      audioChunksRef.current = [];
     }
-  };
+  }, [options, transcripts]);
 
-  const blobToBase64 = (blob: Blob): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-  };
 
-  const playAudio = async (base64Audio: string) => {
-    try {
-      const binaryString = atob(base64Audio);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      const blob = new Blob([bytes], { type: 'audio/mpeg' });
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      
-      await audio.play();
-      
-      audio.onended = () => {
-        URL.revokeObjectURL(url);
-      };
-    } catch (error) {
-      console.error('Error playing audio:', error);
-    }
-  };
 
-  const clearTranscripts = () => {
+  const clearTranscripts = useCallback(() => {
     setTranscripts([]);
+    setError(null);
     setHasInitialized(false);
-  };
+  }, []);
+
+  const addWelcomeMessage = useCallback((message: string) => {
+    setTranscripts((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        text: message,
+        timestamp: new Date(),
+      },
+    ]);
+  }, []);
 
   return {
     isListening,
     isProcessing,
     transcripts,
-    currentTranscript,
+    connectionState,
+    error,
     startListening,
     stopListening,
     clearTranscripts,
+    addWelcomeMessage,
   };
 };
