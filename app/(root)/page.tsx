@@ -10,10 +10,10 @@ const HomePage = () => {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-200 shadow-sm">
         <div className="flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
-        <div className="flex items-center">
-          <img src="/logo-image.jpg" alt="Logo" className="w-8 h-8 mr-2" />
-          <div className="text-2xl font-bold text-gray-900">Partner AI</div>
-        </div>
+        <Link href="/" className="flex items-center">
+          <img src="/logo-image.jpg" alt="Logo" className="w-6 h-6 sm:w-8 sm:h-8 mr-2" />
+          <div className="text-lg sm:text-2xl font-bold text-gray-900">Partner AI</div>
+        </Link>
         
         <div className="hidden md:flex items-center space-x-8">
           <Link href="#how-it-works" className="text-gray-600 hover:text-gray-900 transition-colors font-bold">
@@ -470,7 +470,7 @@ const HomePage = () => {
       {/* Footer */}
       <footer className="px-6 py-12 bg-gray-900 text-white">
         <div className="max-w-6xl mx-auto text-center">
-          <div className="text-2xl font-bold mb-4">Partner AI</div>
+          <div className="text-lg sm:text-2xl font-bold mb-4">Partner AI</div>
           <p className="text-gray-400 mb-8">Master any talk and interview with AI-powered practice</p>
           
           <div className="flex justify-center space-x-8 text-gray-400">

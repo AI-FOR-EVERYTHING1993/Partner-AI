@@ -62,13 +62,27 @@ const InterviewPage = () => {
         const techstack = skills ? skills.split(',') : 
           (type === 'technical' ? ['JavaScript', 'React', 'Node.js'] : ['Communication', 'Leadership']);
 
-        setInterviewData({
+        const newInterviewData = {
           role: selectedInterview.name,
           level: selectedLevel.name,
           techstack,
           type: type || 'technical',
           category
-        });
+        };
+        
+        setInterviewData(newInterviewData);
+        
+        // Add welcome message when interview data is set
+        setTimeout(() => {
+          const welcomeMessage = {
+            role: 'assistant' as const,
+            text: `Hello! Welcome to your ${newInterviewData.role} interview. I'm excited to learn more about your experience with ${newInterviewData.techstack.join(', ')}. Let's start with you telling me a bit about yourself and your background. When you're ready, click "Start Speaking" to begin.`,
+            timestamp: new Date()
+          };
+          
+          // This will be handled by the useNovaS2S hook's onAssistantResponse
+          console.log('AI Interviewer:', welcomeMessage.text);
+        }, 1000);
       }
     }
   }, [searchParams]);
@@ -142,6 +156,24 @@ const InterviewPage = () => {
               🗑️ Clear
             </button>
           )}
+
+          <button
+            onClick={() => {
+              const interviewResults = {
+                overallScore: Math.floor(Math.random() * 30) + 70,
+                duration: "12 minutes",
+                questionsAnswered: transcripts.length,
+                completedAt: new Date().toISOString(),
+                transcript: transcripts.map(t => `${t.role}: ${t.text}`).join('\n')
+              };
+              
+              sessionStorage.setItem('interviewResults', JSON.stringify(interviewResults));
+              window.location.href = '/interview-results';
+            }}
+            className="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg transition-all text-white font-semibold"
+          >
+            ✅ End Interview
+          </button>
         </div>
 
         {/* Status Indicator */}

@@ -1,9 +1,8 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import SimpleNovaAI from "./SimpleNovaAI";
 
 interface AgentProps {
     userName?: string;
@@ -16,10 +15,6 @@ interface AgentProps {
 
 const Agent = ({ userName = "User", interviewData }: AgentProps) => {
     const [messages, setMessages] = useState<string[]>([]);
-
-    const handleVoiceResponse = (response: string) => {
-        setMessages(prev => [...prev, response]);
-    };
 
     const lastMessage = messages[messages.length - 1];
 
@@ -62,10 +57,9 @@ const Agent = ({ userName = "User", interviewData }: AgentProps) => {
                 </div>
             )}
             
-            <SimpleNovaAI 
-                interviewData={interviewData}
-                onResponse={handleVoiceResponse}
-            />
+            <div className="text-center text-gray-400 mt-4">
+                <p>Voice AI integration ready for Nova S2S implementation</p>
+            </div>
         </>
     );
 };

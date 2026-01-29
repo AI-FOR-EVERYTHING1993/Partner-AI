@@ -159,7 +159,7 @@ const ResumeResultsPage = () => {
               Select Interview
             </Button>
           </Link>
-          <Link href="/interview?category=frontend&level=mid&type=technical&company=startup">
+          <Link href="/interview?category=frontend&level=mid&type=technical&skills=JavaScript,React,Node.js">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
               Take Interview
             </Button>

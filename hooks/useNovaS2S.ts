@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 
 interface TranscriptEntry {
   role: 'user' | 'assistant';
@@ -24,10 +24,49 @@ export const useNovaS2S = (options: UseNovaS2SOptions = {}) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const [hasInitialized, setHasInitialized] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
+
+  // Add welcome message when interview context is available
+  useEffect(() => {
+    if (options.interviewContext && !hasInitialized) {
+      const welcomeMessage: TranscriptEntry = {
+        role: 'assistant',
+        text: `Hello! Welcome to your ${options.interviewContext.role} interview. I'm excited to learn more about your experience with ${options.interviewContext.techstack.join(', ')}. Let's start with you telling me a bit about yourself and your background.`,
+        timestamp: new Date()
+      };
+      
+      setTranscripts([welcomeMessage]);
+      setHasInitialized(true);
+      
+      if (options.onAssistantResponse) {
+        options.onAssistantResponse(welcomeMessage.text);
+      }
+      
+      // Simulate AI speaking the welcome message
+      // In production, this would come from Nova S2S audio output
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(welcomeMessage.text);
+        utterance.rate = 0.9;
+        utterance.pitch = 1;
+        utterance.volume = 0.8;
+        
+        // Use a professional voice if available
+        const voices = speechSynthesis.getVoices();
+        const professionalVoice = voices.find(voice => 
+          voice.name.includes('Microsoft') || voice.name.includes('Google')
+        );
+        if (professionalVoice) {
+          utterance.voice = professionalVoice;
+        }
+        
+        speechSynthesis.speak(utterance);
+      }
+    }
+  }, [options.interviewContext, hasInitialized, options.onAssistantResponse]);
 
   const startListening = useCallback(async () => {
     try {
@@ -166,6 +205,7 @@ export const useNovaS2S = (options: UseNovaS2SOptions = {}) => {
 
   const clearTranscripts = () => {
     setTranscripts([]);
+    setHasInitialized(false);
   };
 
   return {
