@@ -8,15 +8,9 @@ const nextConfig: NextConfig = {
         hostname: '**',
       },
     ],
-    unoptimized: true
   },
   typescript: {
-    ignoreBuildErrors: true
-  },
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3000'],
-    },
+    ignoreBuildErrors: true,
   },
 };
 
