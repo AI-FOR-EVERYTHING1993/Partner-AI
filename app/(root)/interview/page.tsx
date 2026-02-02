@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Agent from '@/components/Agent';
 import { useSimpleNova } from '@/hooks/useSimpleNova';
@@ -20,7 +20,7 @@ interface TranscriptEntry {
   timestamp: Date;
 }
 
-const InterviewPage = () => {
+const InterviewContent = () => {
   const searchParams = useSearchParams();
   const [interviewData, setInterviewData] = useState<InterviewData | null>(null);
   
@@ -262,6 +262,25 @@ const InterviewPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const InterviewPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl font-bold mb-2">
+            Loading Interview...
+          </div>
+          <div className="text-gray-400">
+            Preparing your personalized interview experience
+          </div>
+        </div>
+      </div>
+    }>
+      <InterviewContent />
+    </Suspense>
   );
 };
 
