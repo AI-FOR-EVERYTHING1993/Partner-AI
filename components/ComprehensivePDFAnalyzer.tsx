@@ -4,6 +4,25 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+const extractTextFromPDF = async (file: File): Promise<string> => {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    const pageText = textContent.items.map((item: any) => item.str).join(' ');
+    fullText += pageText + '\n';
+  }
+  
+  return fullText;
+};
 
 const ComprehensivePDFAnalyzer = () => {
   const [uploadedFile, setUploadedFile] = useState(null);
@@ -61,10 +80,18 @@ const ComprehensivePDFAnalyzer = () => {
       formData.append('file', uploadedFile);
       formData.append('analysisType', selectedAnalysis);
       
-      setProcessingStep('Analyzing with AI...');
+      setProcessingStep('Analyzing with Nova Pro AI...');
+      
+      // Extract text from PDF first
+      const text = await extractTextFromPDF(uploadedFile);
+      
       const response = await fetch('/api/analyze-resume', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          resumeText: text,
+          category: selectedAnalysis
+        })
       });
       
       const result = await response.json();

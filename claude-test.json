@@ -1,0 +1,10 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hello, can you help me prepare for a software engineering interview?"
+    }
+  ],
+  "max_tokens": 100,
+  "temperature": 0.7
+}

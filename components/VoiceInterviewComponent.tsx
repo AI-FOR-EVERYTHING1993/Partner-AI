@@ -55,12 +55,12 @@ const VoiceInterviewComponent = ({ interviewContext }) => {
 
   const startInterview = async () => {
     try {
-      const response = await fetch('/api/voice-interview', {
+      const response = await fetch('/api/interview-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'start',
-          context: interviewContext
+          message: 'Start the interview with an opening question.',
+          interviewContext
         })
       });
       
@@ -69,7 +69,23 @@ const VoiceInterviewComponent = ({ interviewContext }) => {
         const aiResponse = data.response;
         setCurrentResponse(aiResponse);
         setConversation([{ type: 'ai', message: aiResponse }]);
-        speakText(aiResponse);
+        
+        // Use Polly for voice synthesis
+        const audioResponse = await fetch('/api/voice-synthesis', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: aiResponse, voiceId: 'Joanna' })
+        });
+        
+        if (audioResponse.ok) {
+          const audioBlob = await audioResponse.blob();
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(audioUrl);
+          setIsSpeaking(true);
+          audio.onended = () => setIsSpeaking(false);
+          audio.play();
+        }
+        
         setInterviewStarted(true);
       }
     } catch (error) {
@@ -81,15 +97,14 @@ const VoiceInterviewComponent = ({ interviewContext }) => {
     setConversation(prev => [...prev, { type: 'user', message: userMessage }]);
     
     try {
-      const response = await fetch('/api/voice-interview', {
+      const response = await fetch('/api/interview-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'respond',
           message: userMessage,
-          context: {
+          interviewContext: {
             ...interviewContext,
-            transcript: conversation.map(c => `${c.type}: ${c.message}`).join('\\n')
+            conversation: conversation.slice(-4) // Last 4 messages for context
           }
         })
       });
