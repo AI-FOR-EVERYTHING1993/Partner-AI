@@ -10,7 +10,7 @@ function generateSecretHash(username: string, clientId: string, clientSecret: st
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, code, username } = await request.json();
+    const { username, code } = await request.json();
     
     const cognitoClient = new CognitoIdentityProviderClient({
       region: 'us-east-1'

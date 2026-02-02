@@ -2,29 +2,10 @@ import { bedrockService } from "@/lib/bedrock";
 
 export async function POST(request: Request) {
   try {
-    const { resumeText, action } = await request.json();
+    const { resumeText, action, category } = await request.json();
 
     if (action === 'analyze') {
-      const analysisPrompt = `Analyze this resume and provide detailed feedback:
-
-${resumeText}
-
-Provide analysis in the following format:
-1. **Strengths**: Key strengths and impressive elements
-2. **Areas for Improvement**: Specific areas that need work
-3. **Technical Skills Assessment**: Evaluation of technical skills mentioned
-4. **Experience Evaluation**: Assessment of work experience and projects
-5. **Recommendations**: Specific actionable recommendations
-6. **Overall Score**: Rate from 1-10 with brief explanation
-
-Keep the analysis professional, constructive, and actionable.`;
-
-      const analysis = await bedrockService.generateInterviewResponse(analysisPrompt, {
-        role: 'Resume Analyst',
-        level: 'Expert',
-        techstack: ['Resume Analysis', 'Career Guidance']
-      });
-
+      const analysis = await bedrockService.analyzeResume(resumeText, category);
       return Response.json({ success: true, analysis });
     }
 

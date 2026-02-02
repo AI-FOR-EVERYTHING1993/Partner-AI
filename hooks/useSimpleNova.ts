@@ -1,9 +1,23 @@
-// hooks/useSimpleNova.ts
 "use client"
 
 import { useState, useRef, useCallback } from 'react';
-import { AudioPlayer, AudioRecorder } from '@/lib/nova/audio-utils';
-import { TranscriptEntry, ConnectionState, InterviewContext } from '@/lib/nova/types';
+
+interface TranscriptEntry {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp: Date;
+  isFinal: boolean;
+}
+
+type ConnectionState = 'disconnected' | 'connected' | 'listening' | 'processing' | 'speaking' | 'error';
+
+interface InterviewContext {
+  role?: string;
+  level?: string;
+  techstack?: string[];
+  type?: string;
+}
 
 interface UseSimpleNovaOptions {
   interviewContext?: InterviewContext;
@@ -14,114 +28,132 @@ export function useSimpleNova(options: UseSimpleNovaOptions = {}) {
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected');
   const [transcripts, setTranscripts] = useState<TranscriptEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  const audioRecorderRef = useRef<AudioRecorder | null>(null);
-  const audioPlayerRef = useRef<AudioPlayer | null>(null);
+  const recognitionRef = useRef<any>(null);
 
   const connect = useCallback(async () => {
     setConnectionState('connected');
-    audioRecorderRef.current = new AudioRecorder();
-    audioPlayerRef.current = new AudioPlayer();
     
-    // Add welcome message
-    if (options.interviewContext) {
-      const welcome: TranscriptEntry = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        text: `Hello! Welcome to your ${options.interviewContext.role} interview. I'm excited to learn about your experience with ${options.interviewContext.techstack.join(', ')}. Let's start - tell me about yourself.`,
-        timestamp: new Date(),
-        isFinal: true,
-      };
-      setTranscripts([welcome]);
-    }
-  }, [options.interviewContext]);
-
-  const startListening = useCallback(async () => {
-    try {
-      setError(null);
-      setConnectionState('listening');
-      await audioRecorderRef.current?.start();
-    } catch (err: any) {
-      setError(err.message);
-      setConnectionState('error');
-      options.onError?.(err.message);
-    }
-  }, [options]);
-
-  const stopListening = useCallback(async () => {
-    if (!audioRecorderRef.current?.isRecording()) return;
-
-    setConnectionState('processing');
-
-    try {
-      const audioBase64 = await audioRecorderRef.current.stop();
+    // Initialize speech recognition
+    if ('webkitSpeechRecognition' in window) {
+      recognitionRef.current = new (window as any).webkitSpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
       
-      const response = await fetch('/api/nova-s2s', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          audio: audioBase64,
-          context: options.interviewContext,
-          conversationHistory: transcripts.map(t => ({ role: t.role, text: t.text })),
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to process audio');
-      }
-
-      // Add user transcript
-      if (data.userTranscript) {
+      recognitionRef.current.onresult = async (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        
+        // Add user message
         const userEntry: TranscriptEntry = {
           id: Date.now().toString(),
           role: 'user',
-          text: data.userTranscript,
+          text: transcript,
           timestamp: new Date(),
           isFinal: true,
         };
         setTranscripts(prev => [...prev, userEntry]);
-      }
-
-      // Add assistant response
-      if (data.assistantText) {
-        setConnectionState('speaking');
-        const assistantEntry: TranscriptEntry = {
-          id: (Date.now() + 1).toString(),
+        
+        // Get AI response
+        setConnectionState('processing');
+        try {
+          const response = await fetch('/api/voice-interview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'respond',
+              message: transcript,
+              context: options.interviewContext
+            })
+          });
+          
+          const data = await response.json();
+          if (data.success) {
+            const aiEntry: TranscriptEntry = {
+              id: (Date.now() + 1).toString(),
+              role: 'assistant',
+              text: data.response,
+              timestamp: new Date(),
+              isFinal: true,
+            };
+            setTranscripts(prev => [...prev, aiEntry]);
+            
+            // Speak the response
+            setConnectionState('speaking');
+            const utterance = new SpeechSynthesisUtterance(data.response);
+            utterance.rate = 0.9;
+            utterance.onend = () => setConnectionState('connected');
+            speechSynthesis.speak(utterance);
+          }
+        } catch (err: any) {
+          setError(err.message);
+          setConnectionState('error');
+        }
+      };
+      
+      recognitionRef.current.onerror = (event: any) => {
+        setError('Speech recognition error: ' + event.error);
+        setConnectionState('error');
+      };
+      
+      recognitionRef.current.onend = () => {
+        if (connectionState === 'listening') {
+          setConnectionState('connected');
+        }
+      };
+    }
+    
+    // Add welcome message
+    try {
+      const response = await fetch('/api/voice-interview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'start',
+          context: options.interviewContext
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        const welcome: TranscriptEntry = {
+          id: Date.now().toString(),
           role: 'assistant',
-          text: data.assistantText,
+          text: data.response,
           timestamp: new Date(),
           isFinal: true,
         };
-        setTranscripts(prev => [...prev, assistantEntry]);
-
-        // Play audio if available
-        if (data.audioBase64) {
-          await audioPlayerRef.current?.playBase64Audio(data.audioBase64);
-        } else {
-          // Fallback to speech synthesis
-          const utterance = new SpeechSynthesisUtterance(data.assistantText);
-          utterance.rate = 0.9;
-          utterance.onend = () => setConnectionState('connected');
-          speechSynthesis.speak(utterance);
-        }
+        setTranscripts([welcome]);
+        
+        // Speak welcome message
+        const utterance = new SpeechSynthesisUtterance(data.response);
+        utterance.rate = 0.9;
+        speechSynthesis.speak(utterance);
       }
-
-      if (!data.audioBase64) {
-        setConnectionState('connected');
-      }
-
-    } catch (err: any) {
-      setError(err.message);
-      setConnectionState('error');
-      options.onError?.(err.message);
+    } catch (err) {
+      console.error('Failed to get welcome message:', err);
     }
-  }, [options, transcripts]);
+  }, [options.interviewContext, connectionState]);
+
+  const startListening = useCallback(() => {
+    if (recognitionRef.current) {
+      setError(null);
+      setConnectionState('listening');
+      recognitionRef.current.start();
+    } else {
+      setError('Speech recognition not supported');
+    }
+  }, []);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setConnectionState('connected');
+    }
+  }, []);
 
   const disconnect = useCallback(() => {
-    audioRecorderRef.current?.stopRecording();
-    audioPlayerRef.current?.stop();
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
     speechSynthesis.cancel();
     setConnectionState('disconnected');
   }, []);

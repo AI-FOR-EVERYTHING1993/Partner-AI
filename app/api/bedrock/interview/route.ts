@@ -2,22 +2,34 @@ import { bedrockService } from "@/lib/bedrock";
 
 export async function POST(request: Request) {
   try {
-    const { action, message, interviewData, transcript } = await request.json();
+    const { action, message, interviewData, transcript, category, difficulty } = await request.json();
 
     if (action === 'start') {
-      // Generate an engaging opening message
-      const openingPrompt = `You are starting an interview for a ${interviewData.role} position at ${interviewData.level} level. The candidate's focus areas are: ${interviewData.techstack.join(', ')}.
+      if (!interviewData || !interviewData.role || !interviewData.level || !interviewData.techstack) {
+        return Response.json({ success: false, error: "Missing required interview data (role, level, techstack)" }, { status: 400 });
+      }
+      const questions = await bedrockService.generateInterviewQuestions(
+        interviewData.role,
+        interviewData.level,
+        interviewData.techstack
+      );
+      return Response.json({ success: true, response: questions, isOpening: true });
+    }
 
-Generate a warm, professional opening greeting that:
-1. Welcomes the candidate
-2. Introduces yourself as their AI interviewer
-3. Asks an engaging opening question about their background
-4. Sets a positive, encouraging tone
+    if (action === 'voice-practice') {
+      if (!category || !difficulty) {
+        return Response.json({ success: false, error: "Missing required parameters (category, difficulty)" }, { status: 400 });
+      }
+      const prompts = await bedrockService.generateVoicePrompts(category, difficulty);
+      return Response.json({ success: true, prompts });
+    }
 
-Keep it conversational and under 100 words.`;
-      
-      const response = await bedrockService.generateInterviewResponse(openingPrompt, interviewData);
-      return Response.json({ success: true, response, isOpening: true });
+    if (action === 'feedback') {
+      if (!transcript || !interviewData) {
+        return Response.json({ success: false, error: "Missing required parameters (transcript, interviewData)" }, { status: 400 });
+      }
+      const feedback = await bedrockService.provideFeedback(transcript, interviewData);
+      return Response.json({ success: true, feedback });
     }
 
     if (message && interviewData) {

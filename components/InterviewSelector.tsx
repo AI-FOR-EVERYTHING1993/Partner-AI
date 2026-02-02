@@ -64,104 +64,82 @@ const InterviewSelector = () => {
     setUploadError('');
     
     try {
-      // Simulate PDF analysis with realistic delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const formData = new FormData();
+      formData.append('file', file);
       
-      // Generate mock analysis based on filename or random selection
-      const mockAnalyses = [
-        {
-          suggestedCategory: 'frontend',
-          suggestedLevel: 'mid',
-          extractedSkills: ['React', 'JavaScript', 'CSS', 'Node.js'],
-          recommendations: [
-            'Add more quantified achievements',
-            'Include leadership experience',
-            'Highlight problem-solving skills'
-          ],
-          confidence: 92
-        },
-        {
-          suggestedCategory: 'backend',
-          suggestedLevel: 'senior',
-          extractedSkills: ['Python', 'Django', 'PostgreSQL', 'AWS'],
-          recommendations: [
-            'Emphasize system design experience',
-            'Add cloud architecture projects',
-            'Include team mentoring examples'
-          ],
-          confidence: 88
-        },
-        {
-          suggestedCategory: 'data-science',
-          suggestedLevel: 'mid',
-          extractedSkills: ['Python', 'Machine Learning', 'SQL', 'TensorFlow'],
-          recommendations: [
-            'Add more ML project outcomes',
-            'Include data visualization skills',
-            'Highlight statistical analysis experience'
-          ],
-          confidence: 85
-        },
-        {
-          suggestedCategory: 'product-manager',
-          suggestedLevel: 'senior',
-          extractedSkills: ['Product Strategy', 'Agile', 'Analytics', 'Leadership'],
-          recommendations: [
-            'Quantify product impact metrics',
-            'Add cross-functional collaboration examples',
-            'Include user research experience'
-          ],
-          confidence: 90
-        }
-      ];
-      
-      // Select random analysis or based on filename
-      const randomAnalysis = mockAnalyses[Math.floor(Math.random() * mockAnalyses.length)];
-      
-      // Auto-apply AI recommendations after analysis
-      setResumeAnalysis(randomAnalysis);
-      
-      // Auto-select the recommended options
-      const suggestedType = TECHNICAL_INTERVIEWS.find(t => t.id === randomAnalysis.suggestedCategory) ? 'technical' : 'non-technical';
-      setSelection({
-        category: randomAnalysis.suggestedCategory,
-        type: suggestedType,
-        experienceLevel: randomAnalysis.suggestedLevel,
-        companyType: 'startup' // Default company type
+      const response = await fetch('/api/analyze-resume', {
+        method: 'POST',
+        body: formData
       });
-      setUseAIRecommendations(true);
       
-      // Store analysis for resume results page
-      const resumeResults = {
-        overallScore: 85,
-        atsScore: 78,
-        industryMatch: "Technology",
-        experienceLevel: "Mid-Level",
-        strengths: [
-          "Strong technical skills with modern frameworks",
-          "Quantified achievements showing business impact",
-          "Clear career progression",
-          "ATS-friendly formatting"
-        ],
-        improvements: randomAnalysis.recommendations,
-        keywordOptimization: {
-          missing: ["Agile", "CI/CD", "Cloud Architecture"],
-          present: randomAnalysis.extractedSkills,
-          suggestions: ["Add cloud technologies", "Include DevOps experience"]
-        },
-        industryInsights: {
-          topSkills: ["React", "AWS", "Docker", "Kubernetes"],
-          emergingTrends: ["AI/ML", "Cloud Native", "Microservices"],
-          salaryRange: "$80k - $120k",
-          demandLevel: "High"
-        },
-        recruiterTips: ["Quantify achievements", "Use action verbs"],
-        nextSteps: ["Update skills section", "Add portfolio links"]
-      };
+      if (!response.ok) throw new Error('Failed to analyze resume');
+      const result = await response.json();
       
-      // Don't redirect to resume-results, stay on this page
-      // sessionStorage.setItem('resumeAnalysis', JSON.stringify(resumeResults));
-      
+      if (result.success) {
+        const analysis = result.analysis;
+        
+        // Smart category mapping based on detected industry and skills
+        let suggestedCategory = 'general';
+        let suggestedType: 'technical' | 'non-technical' = 'technical';
+        
+        const industry = analysis.detectedIndustry?.toLowerCase() || '';
+        const role = analysis.detectedRole?.toLowerCase() || '';
+        const skills = analysis.keywords?.present || [];
+        
+        // Determine category based on skills and role
+        if (skills.some(s => ['react', 'javascript', 'frontend', 'css', 'html'].includes(s.toLowerCase()))) {
+          suggestedCategory = 'frontend';
+        } else if (skills.some(s => ['node', 'backend', 'api', 'server', 'database'].includes(s.toLowerCase()))) {
+          suggestedCategory = 'backend';
+        } else if (skills.some(s => ['devops', 'aws', 'docker', 'kubernetes', 'ci/cd'].includes(s.toLowerCase()))) {
+          suggestedCategory = 'devops';
+        } else if (skills.some(s => ['python', 'machine learning', 'ai', 'data'].includes(s.toLowerCase()))) {
+          suggestedCategory = 'data-science';
+        } else if (industry.includes('tech') || role.includes('engineer') || role.includes('developer')) {
+          suggestedCategory = 'fullstack';
+        } else {
+          suggestedType = 'non-technical';
+          if (role.includes('manager') || role.includes('lead')) {
+            suggestedCategory = 'management';
+          } else if (role.includes('sales') || role.includes('business')) {
+            suggestedCategory = 'sales';
+          } else {
+            suggestedCategory = 'general';
+          }
+        }
+        
+        // Determine experience level
+        let suggestedLevel = 'mid';
+        const experience = analysis.experienceLevel?.toLowerCase() || '';
+        if (experience.includes('entry') || experience.includes('junior')) {
+          suggestedLevel = 'entry';
+        } else if (experience.includes('senior') || experience.includes('lead')) {
+          suggestedLevel = 'senior';
+        } else if (experience.includes('executive') || experience.includes('director')) {
+          suggestedLevel = 'senior';
+        }
+        
+        const mappedAnalysis = {
+          suggestedCategory,
+          suggestedLevel,
+          extractedSkills: skills.slice(0, 6),
+          recommendations: analysis.improvements?.slice(0, 3) || ['Add quantified achievements'],
+          confidence: analysis.atsScore || 85
+        };
+        
+        setResumeAnalysis(mappedAnalysis);
+        
+        // Auto-apply the AI recommendations
+        setSelection({
+          category: suggestedCategory,
+          type: suggestedType,
+          experienceLevel: suggestedLevel,
+          companyType: 'startup' // Default
+        });
+        setUseAIRecommendations(true);
+      } else {
+        throw new Error(result.error || 'Analysis failed');
+      }
     } catch (error) {
       setUploadError('Failed to analyze resume. Please try again.');
     } finally {
@@ -337,20 +315,20 @@ const InterviewSelector = () => {
                   </Button>
                   <Button 
                     onClick={() => {
-                      sessionStorage.setItem('resumeAnalysis', JSON.stringify({
-                        overallScore: 85,
-                        atsScore: 78,
-                        industryMatch: "Technology",
-                        experienceLevel: "Mid-Level",
-                        strengths: ["Strong technical skills", "Clear project descriptions"],
-                        improvements: resumeAnalysis.recommendations,
-                        keywordOptimization: {
-                          missing: ["Agile", "CI/CD"],
-                          present: resumeAnalysis.extractedSkills,
-                          suggestions: ["Add cloud technologies"]
+                      // Store the comprehensive analysis data
+                      const fullAnalysisData = {
+                        fileName: resumeFile?.name,
+                        uploadedAt: new Date().toISOString(),
+                        quickSummary: {
+                          suggestedCategory: resumeAnalysis.suggestedCategory,
+                          suggestedLevel: resumeAnalysis.suggestedLevel,
+                          extractedSkills: resumeAnalysis.extractedSkills,
+                          recommendations: resumeAnalysis.recommendations,
+                          confidence: resumeAnalysis.confidence
                         }
-                      }));
-                      window.location.href = '/resume-results';
+                      };
+                      sessionStorage.setItem('quickAnalysis', JSON.stringify(fullAnalysisData));
+                      window.location.href = '/pdf-analysis';
                     }}
                     variant="outline"
                     className="border-blue-300 text-blue-700 hover:bg-blue-50"

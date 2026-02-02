@@ -15,6 +15,11 @@ export class NovaSonicService {
   private modelId: string;
 
   constructor() {
+    // Validate credentials before creating client
+    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
+      throw new Error("AWS credentials not configured. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env.local");
+    }
+    
     this.client = new BedrockRuntimeClient({
       region: process.env.AWS_REGION || "us-east-1",
       credentials: {
@@ -26,12 +31,7 @@ export class NovaSonicService {
   }
 
   async startVoiceSession(interviewData: any): Promise<string> {
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Validate AWS credentials
-    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      throw new Error("AWS credentials not configured. Please set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY in .env.local");
-    }
+    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
     // Generate AI-first prompt
     const aiPrompt = generateAIFirstPrompt(interviewData, 'PROFESSIONAL');

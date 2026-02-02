@@ -2,25 +2,13 @@ import {
   BedrockRuntimeClient,
   S3Client,
   DynamoDBClient,
-  LambdaClient,
   CognitoIdentityProviderClient,
-  SESClient,
-  SNSClient,
-  SQSClient,
-  CloudWatchLogsClient,
-  SecretsManagerClient,
-  RekognitionClient,
-  TextractClient,
-  ComprehendClient,
-  TranslateClient,
-  PollyClient,
-  TranscribeClient,
-  LexRuntimeV2Client,
-  SFNClient,
-  EventBridgeClient,
-  KinesisClient,
-  OpenSearchClient
-} from '@aws-sdk/client-*';
+  PollyClient
+} from '@aws-sdk/client-bedrock-runtime';
+import { S3Client as S3ClientImport } from '@aws-sdk/client-s3';
+import { DynamoDBClient as DynamoDBClientImport } from '@aws-sdk/client-dynamodb';
+import { CognitoIdentityProviderClient as CognitoClientImport } from '@aws-sdk/client-cognito-identity-provider';
+import { PollyClient as PollyClientImport } from '@aws-sdk/client-polly';
 
 const awsConfig = {
   region: process.env.AWS_REGION || 'us-east-1',
@@ -31,25 +19,11 @@ const awsConfig = {
   }
 };
 
-// Initialize all AWS clients
+// Initialize AWS clients
 export const bedrockClient = new BedrockRuntimeClient(awsConfig);
-export const s3Client = new S3Client(awsConfig);
-export const dynamoClient = new DynamoDBClient(awsConfig);
-export const lambdaClient = new LambdaClient(awsConfig);
-export const cognitoClient = new CognitoIdentityProviderClient(awsConfig);
-export const sesClient = new SESClient(awsConfig);
-export const snsClient = new SNSClient(awsConfig);
-export const sqsClient = new SQSClient(awsConfig);
-export const cloudWatchClient = new CloudWatchLogsClient(awsConfig);
-export const secretsClient = new SecretsManagerClient(awsConfig);
-export const rekognitionClient = new RekognitionClient(awsConfig);
-export const textractClient = new TextractClient(awsConfig);
-export const comprehendClient = new ComprehendClient(awsConfig);
-export const translateClient = new TranslateClient(awsConfig);
-export const pollyClient = new PollyClient(awsConfig);
-export const transcribeClient = new TranscribeClient(awsConfig);
-export const lexClient = new LexRuntimeV2Client(awsConfig);
-export const stepFunctionsClient = new SFNClient(awsConfig);
-export const eventBridgeClient = new EventBridgeClient(awsConfig);
-export const kinesisClient = new KinesisClient(awsConfig);
-export const openSearchClient = new OpenSearchClient(awsConfig);
+export const s3Client = new S3ClientImport(awsConfig);
+export const dynamoClient = new DynamoDBClientImport(awsConfig);
+export const cognitoClient = new CognitoClientImport(awsConfig);
+export const pollyClient = new PollyClientImport(awsConfig);
+
+export default awsConfig;

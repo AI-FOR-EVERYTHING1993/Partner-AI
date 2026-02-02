@@ -10,19 +10,18 @@ function generateSecretHash(username: string, clientId: string, clientSecret: st
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, name, preferredName } = await request.json();
+    const { email, password, name } = await request.json();
     
-    // Split name into first and last name
     const nameParts = name.trim().split(' ');
     const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || firstName; // Use firstName as fallback
+    const lastName = nameParts.slice(1).join(' ') || firstName;
+    
+    // Create readable username from name (no email format)
+    const username = `${firstName.toLowerCase()}${lastName.toLowerCase()}`.replace(/[^a-z0-9]/g, '') + Math.floor(Math.random() * 1000);
     
     const cognitoClient = new CognitoIdentityProviderClient({
       region: 'us-east-1'
     });
-
-    // Generate unique username from email (remove @ and . characters)
-    const username = email.replace(/[@.]/g, '_') + '_' + Date.now();
 
     const secretHash = generateSecretHash(
       username, 
@@ -40,7 +39,8 @@ export async function POST(request: NextRequest) {
         { Name: 'name', Value: name },
         { Name: 'given_name', Value: firstName },
         { Name: 'family_name', Value: lastName },
-        { Name: 'preferred_username', Value: preferredName || firstName }
+        { Name: 'nickname', Value: firstName },
+        { Name: 'preferred_username', Value: email }
       ]
     });
     
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: 'Account created successfully! Check your email for verification code.',
       userId: response.UserSub,
-      username: username // Return username for confirmation
+      username: username
     });
   } catch (error) {
     console.error('Signup error:', error);

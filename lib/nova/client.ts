@@ -20,7 +20,7 @@ export function buildSessionConfig(context?: InterviewContext): NovaSessionConfi
 
   return {
     region: process.env.AWS_REGION || 'us-east-1',
-    modelId: process.env.NOVA_SONIC_MODEL_ID || 'amazon.nova-sonic-v1:0',
+    modelId: process.env.NOVA_SONIC_MODEL_ID || 'us.amazon.nova-2-sonic-v1:0',
     voiceId: 'matthew',
     sampleRate: 24000,
     systemPrompt,

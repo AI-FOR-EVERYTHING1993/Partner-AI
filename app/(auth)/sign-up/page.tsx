@@ -11,13 +11,34 @@ export default function SignUpPage() {
     password: '',
     confirmPassword: '',
     confirmCode: '',
-    username: '' // Store generated username
+    username: ''
   });
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [message, setMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleResendCode = async () => {
+    setResendLoading(true);
+    setMessage('');
+    
+    try {
+      const response = await fetch('/api/auth/resend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: formData.username })
+      });
+      
+      const data = await response.json();
+      setMessage(data.success ? data.message : data.error);
+    } catch (error) {
+      setMessage('Failed to resend code');
+    }
+    
+    setResendLoading(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,9 +71,8 @@ export default function SignUpPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: formData.email,
-            code: formData.confirmCode,
-            username: formData.username
+            username: formData.username,
+            code: formData.confirmCode
           })
         });
         
@@ -80,7 +100,7 @@ export default function SignUpPage() {
         const data = await response.json();
         if (data.success) {
           setNeedsConfirmation(true);
-          setFormData({...formData, username: data.username}); // Store username
+          setFormData({...formData, username: data.username});
           setMessage('Check your email for verification code');
         } else {
           setMessage(data.error);
@@ -118,6 +138,14 @@ export default function SignUpPage() {
                     required
                   />
                 </div>
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={resendLoading || !formData.username}
+                  className="w-full mt-3 bg-gray-500 text-white p-2 rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                >
+                  {resendLoading ? 'Sending...' : 'Resend Code'}
+                </button>
               </>
             ) : (
               <>
@@ -254,6 +282,16 @@ export default function SignUpPage() {
                 : 'bg-green-100 text-green-700 border border-green-300'
             }`}>
               {message}
+              {message.includes('already exists') && (
+                <div className="mt-3">
+                  <a 
+                    href="/sign-in" 
+                    className="inline-block bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors font-medium"
+                  >
+                    Go to Sign In
+                  </a>
+                </div>
+              )}
             </div>
           )}
           

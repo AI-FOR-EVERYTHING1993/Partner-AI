@@ -8,7 +8,8 @@ export default function AuthForm() {
     email: '',
     password: '',
     name: '',
-    confirmCode: ''
+    confirmCode: '',
+    username: ''
   });
   const [loading, setLoading] = useState(false);
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
@@ -26,7 +27,8 @@ export default function AuthForm() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: formData.email,
-            code: formData.confirmCode
+            code: formData.confirmCode,
+            username: formData.username
           })
         });
         
@@ -71,6 +73,7 @@ export default function AuthForm() {
         if (data.success) {
           setNeedsConfirmation(true);
           setMessage('Check your email for verification code');
+          setFormData({...formData, username: data.username}); // Store username
         } else {
           setMessage(data.error);
         }
@@ -156,7 +159,7 @@ export default function AuthForm() {
             onClick={() => {
               setIsLogin(!isLogin);
               setMessage('');
-              setFormData({ email: '', password: '', name: '', confirmCode: '' });
+              setFormData({ email: '', password: '', name: '', confirmCode: '', username: '' });
             }}
             className="text-blue-500 hover:underline font-medium"
           >
