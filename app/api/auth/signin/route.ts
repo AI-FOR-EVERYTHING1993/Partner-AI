@@ -12,6 +12,23 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
     
+    // Check if auth bypass is enabled
+    const isAuthBypassEnabled = process.env.AUTH_BYPASS_ENABLED === 'true' || 
+      !process.env.AWS_COGNITO_CLIENT_ID ||
+      process.env.AWS_COGNITO_CLIENT_ID === 'your_client_id_here';
+
+    if (isAuthBypassEnabled) {
+      console.log('🔓 Auth bypass: Sign in simulated for', email);
+      return NextResponse.json({ 
+        success: true, 
+        tokens: {
+          accessToken: `test-access-token-${Date.now()}`,
+          idToken: `test-id-token-${Date.now()}`,
+          refreshToken: `test-refresh-token-${Date.now()}`
+        }
+      });
+    }
+    
     const cognitoClient = new CognitoIdentityProviderClient({
       region: 'us-east-1'
     });
@@ -42,7 +59,7 @@ export async function POST(request: NextRequest) {
         refreshToken: response.AuthenticationResult?.RefreshToken
       }
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signin error:', error);
     return NextResponse.json({ 
       success: false, 

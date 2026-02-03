@@ -12,6 +12,21 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password, name } = await request.json();
     
+    // Check if auth bypass is enabled
+    const isAuthBypassEnabled = process.env.AUTH_BYPASS_ENABLED === 'true' || 
+      !process.env.AWS_COGNITO_CLIENT_ID ||
+      process.env.AWS_COGNITO_CLIENT_ID === 'your_client_id_here';
+
+    if (isAuthBypassEnabled) {
+      console.log('🔓 Auth bypass: Sign up simulated for', email);
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Account created successfully! (Auth bypass mode)',
+        userId: `test-user-${Date.now()}`,
+        username: email.split('@')[0]
+      });
+    }
+    
     const nameParts = name.trim().split(' ');
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || firstName;
@@ -52,7 +67,7 @@ export async function POST(request: NextRequest) {
       userId: response.UserSub,
       username: username
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Signup error:', error);
     return NextResponse.json({ 
       success: false, 

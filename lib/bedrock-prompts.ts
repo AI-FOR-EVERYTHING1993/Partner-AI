@@ -1,389 +1,231 @@
-// 🎯 Optimized Prompt Templates for AWS Bedrock Models
+// 🎯 Bedrock AI Prompts for Interview System
+// Optimized for Nova models with structured responses
 
 export const BEDROCK_PROMPTS = {
-  // 📋 Resume Analysis Prompts
+  // 📄 Resume Analysis Prompts
   RESUME_ANALYSIS: {
-    COMPREHENSIVE: `
-You are an expert resume analyst and career coach. Analyze the following resume with precision and provide actionable insights.
+    COMPREHENSIVE_ANALYSIS: `Analyze this resume and provide structured JSON output with interview category recommendations:
 
-RESUME CONTENT:
+RESUME TEXT:
 {resumeText}
 
-ANALYSIS REQUIREMENTS:
-1. **Overall Assessment**: Score 1-10 with specific reasoning
-2. **ATS Compatibility**: Technical formatting and keyword optimization score
-3. **Experience Level Classification**: entry/mid/senior/lead based on content depth
-4. **Category Recommendations**: Match to specific interview categories with confidence scores
-5. **Skill Extraction**: Categorize technical, soft, and tool skills
-6. **Industry Alignment**: Primary industry match with percentage confidence
-
-OUTPUT FORMAT (JSON):
+Provide analysis in this exact JSON format:
 {
-  "overallScore": number,
-  "atsCompatibility": number,
-  "experienceLevel": "entry|mid|senior|lead",
-  "recommendedCategories": [
+  "overallScore": <number 1-100>,
+  "atsCompatibility": <number 1-100>,
+  "industryMatch": <number 1-100>,
+  "experienceLevel": "<entry|mid|senior|lead>",
+  "detectedRole": "<primary role detected>",
+  "detectedIndustry": "<primary industry>",
+  "strengths": [
+    "<strength 1>",
+    "<strength 2>",
+    "<strength 3>",
+    "<strength 4>"
+  ],
+  "improvements": [
+    "<improvement 1>",
+    "<improvement 2>",
+    "<improvement 3>",
+    "<improvement 4>"
+  ],
+  "keywords": {
+    "present": ["<keyword1>", "<keyword2>", "<keyword3>"],
+    "missing": ["<missing1>", "<missing2>", "<missing3>"]
+  },
+  "recommendedInterviews": [
     {
-      "categoryId": "string",
-      "matchScore": number,
-      "reasoning": "specific evidence from resume",
-      "confidence": "high|medium|low"
+      "category": "<interview category id>",
+      "name": "<interview name>",
+      "match": <percentage 1-100>,
+      "reason": "<why this interview is recommended>"
     }
   ],
-  "strengths": ["specific strengths with evidence"],
-  "improvements": ["actionable improvement suggestions"],
-  "missingKeywords": ["industry-relevant keywords to add"],
-  "industryMatch": {
-    "primary": "industry name",
-    "percentage": number
-  },
-  "skillsExtracted": {
-    "technical": ["programming languages, frameworks, tools"],
-    "soft": ["leadership, communication, problem-solving"],
-    "tools": ["software, platforms, methodologies"]
-  }
-}
+  "nextSteps": [
+    "<actionable step 1>",
+    "<actionable step 2>",
+    "<actionable step 3>"
+  ]
+}`,
 
-Be specific, evidence-based, and actionable in all assessments.
-`,
+    QUICK_SCAN: `Quickly analyze this resume for key information:
 
-    CATEGORY_MATCHING: `
-Based on this resume content, recommend the most suitable interview categories:
+{resumeText}
 
-RESUME: {resumeText}
-
-AVAILABLE CATEGORIES: {categories}
-
-For each recommendation, provide:
-- Match percentage (0-100)
-- Specific evidence from resume
-- Confidence level (high/medium/low)
-- Key skills that align
-
-Focus on the top 5 most relevant categories with detailed reasoning.
-`
+Return JSON with:
+- experienceLevel (entry/mid/senior)
+- primarySkills (array of top 5 skills)
+- detectedRole (most likely job title)
+- overallScore (1-100)
+- topStrength (single biggest strength)`
   },
 
   // 🎤 Interview Simulation Prompts
   INTERVIEW_SIMULATION: {
-    CONTEXTUAL_QUESTIONS: `
-Generate {questionCount} progressive interview questions for a {category} position at {level} level.
-
-{resumeContext ? `CANDIDATE BACKGROUND:\n${resumeContext}\n` : ''}
+    CONTEXTUAL_QUESTIONS: `Generate interview questions for a {category} position at {level} level.
 
 REQUIREMENTS:
 - Mix behavioral (40%) and technical (60%) questions
 - Progressive difficulty from warm-up to challenging
 - Role-specific scenarios and examples
 - Include follow-up probes for each question
-- Specify expected response elements
 
 JSON FORMAT:
 {
   "questions": [
     {
-      "id": number,
-      "type": "behavioral|technical|situational",
+      "id": 1,
+      "type": "behavioral",
       "question": "main question text",
-      "followUps": ["probe deeper", "clarify specifics", "explore alternatives"],
-      "expectedElements": ["STAR method", "technical accuracy", "specific metrics"],
-      "difficulty": "easy|medium|hard",
+      "followUps": ["probe deeper", "clarify specifics"],
+      "expectedElements": ["STAR method", "specific metrics"],
+      "difficulty": "easy",
       "timeAllocation": "2-3 minutes"
     }
   ]
-}
+}`,
 
-Ensure questions are:
-1. Relevant to the specific role and level
-2. Designed to assess key competencies
-3. Open-ended to encourage detailed responses
-4. Professional and unbiased
-`,
-
-    INTERVIEWER_RESPONSE: `
-You are conducting a {role} interview at {level} level. The candidate just responded to your question.
+    INTERVIEWER_RESPONSE: `You are conducting a {role} interview at {level} level. The candidate just responded to your question.
 
 INTERVIEW CONTEXT:
 - Role: {role}
 - Level: {level}
 - Focus Areas: {techStack}
 - Current Question: {currentQuestion}
-- Interview Phase: {phase}
 
-CANDIDATE RESPONSE: "{userMessage}"
+CANDIDATE RESPONSE:
+"{candidateResponse}"
 
-RESPOND AS INTERVIEWER:
-1. **Acknowledge** their response briefly (1-2 sentences)
-2. **Follow-up** with a relevant probe OR transition to next topic
-3. **Maintain** professional, encouraging tone
-4. **Keep** response under 150 words
-5. **Show** active listening and engagement
+Provide a natural interviewer response that:
+1. Acknowledges their answer appropriately
+2. Asks a relevant follow-up question
+3. Keeps the conversation flowing naturally
+4. Maintains professional interview tone
 
-RESPONSE GUIDELINES:
-- If response is incomplete: Ask for clarification or more details
-- If response is strong: Acknowledge and probe deeper or move forward
-- If response shows gaps: Gently guide toward better structure
-- If off-topic: Redirect professionally
+Keep response under 100 words and conversational.`,
 
-Be conversational, supportive, and maintain interview flow.
-`,
+    STREAMING_RESPONSE: `As an interviewer for {role} position, respond to: "{userInput}"
 
-    STREAMING_RESPONSE: `
-Continue this interview conversation naturally. You are an experienced {role} interviewer.
-
-CONTEXT: {interviewContext}
-CANDIDATE SAID: "{userMessage}"
-
-Respond with appropriate follow-up or next question. Keep it conversational and under 100 words.
-`
+Keep it conversational, under 50 words, and ask a follow-up question.`
   },
 
-  // 📊 Performance Evaluation Prompts
-  PERFORMANCE_EVALUATION: {
-    COMPREHENSIVE: `
-Conduct a thorough interview performance analysis:
+  // 📊 Performance Analysis Prompts
+  PERFORMANCE_ANALYSIS: {
+    COMPREHENSIVE_FEEDBACK: `Analyze this interview performance and provide comprehensive feedback:
 
-INTERVIEW DETAILS:
+INTERVIEW CONTEXT:
 - Role: {role}
 - Level: {level}
-- Duration: {duration} minutes
-- Questions Covered: {questionCount}
+- Duration: {duration}
+- Questions Asked: {questionCount}
 
-FULL TRANSCRIPT:
+INTERVIEW TRANSCRIPT:
 {transcript}
 
-EVALUATION FRAMEWORK:
-Assess each area on 1-10 scale with specific evidence:
+RESUME ANALYSIS (if available):
+{resumeAnalysis}
 
-1. **Technical Knowledge**: Accuracy, depth, current practices
-2. **Communication**: Clarity, structure, listening skills
-3. **Problem Solving**: Approach, creativity, logical thinking
-4. **Cultural Fit**: Collaboration, values alignment, adaptability
-5. **Leadership**: Initiative, influence, mentoring (if applicable)
-
-JSON OUTPUT:
+Provide detailed feedback in JSON format:
 {
-  "overallScore": number,
-  "categoryScores": {
-    "technicalKnowledge": number,
-    "communication": number,
-    "problemSolving": number,
-    "culturalFit": number,
-    "leadership": number
+  "overallScore": <number 1-100>,
+  "performance": {
+    "technical": <score 1-100>,
+    "communication": <score 1-100>,
+    "problemSolving": <score 1-100>,
+    "confidence": <score 1-100>
   },
   "strengths": [
-    {
-      "area": "specific competency",
-      "description": "what they did well",
-      "examples": ["specific evidence from transcript"]
-    }
+    "<strength 1 with specific example>",
+    "<strength 2 with specific example>",
+    "<strength 3 with specific example>"
   ],
   "improvements": [
-    {
-      "area": "competency needing work",
-      "issue": "specific problem identified",
-      "suggestion": "actionable improvement advice",
-      "priority": "high|medium|low"
-    }
+    "<improvement 1 with actionable advice>",
+    "<improvement 2 with actionable advice>",
+    "<improvement 3 with actionable advice>"
   ],
-  "detailedFeedback": {
-    "responseQuality": "assessment of answer structure and depth",
-    "communicationStyle": "clarity, pace, engagement evaluation",
-    "technicalDepth": "accuracy and sophistication of technical responses",
-    "behavioralResponses": "use of examples, STAR method, storytelling"
+  "resumeAlignment": {
+    "score": <how well interview matched resume 1-100>,
+    "gaps": ["<gap 1>", "<gap 2>"],
+    "highlights": ["<highlight 1>", "<highlight 2>"]
   },
   "nextSteps": [
-    {
-      "action": "specific recommendation",
-      "timeline": "when to implement",
-      "resources": ["books, courses, practice areas"]
-    }
-  ],
-  "interviewReadiness": {
-    "currentLevel": "assessment of current capability",
-    "targetLevel": "where they should aim",
-    "gapAnalysis": "specific areas to bridge"
-  }
-}
-
-Be constructive, specific, and actionable. Provide evidence for all assessments.
-`,
-
-    QUICK_FEEDBACK: `
-Provide immediate feedback on this interview response:
-
-QUESTION: {question}
-RESPONSE: {response}
-ROLE: {role}
-LEVEL: {level}
-
-Give brief feedback on:
-1. Response quality (1-10)
-2. Key strengths
-3. Main improvement area
-4. Specific suggestion
-
-Keep feedback encouraging and actionable (under 200 words).
-`
-  },
-
-  // 🎯 Voice Practice Prompts
-  VOICE_PRACTICE: {
-    SCENARIO_GENERATION: `
-Create {count} voice practice scenarios for {category} interviews at {difficulty} level.
-
-Each scenario should include:
-1. **Situation**: Realistic workplace context
-2. **Task**: Specific challenge or objective
-3. **Expected Response**: What interviewer wants to hear
-4. **Time Limit**: Recommended response duration
-5. **Evaluation Criteria**: Key elements to assess
-
-Make scenarios:
-- Relevant to {category} role
-- Appropriate for {difficulty} level
-- Designed for voice practice
-- Realistic and engaging
-
-JSON FORMAT:
-{
-  "scenarios": [
-    {
-      "id": number,
-      "title": "scenario name",
-      "situation": "context description",
-      "task": "what candidate needs to address",
-      "expectedResponse": "key elements of good response",
-      "timeLimit": "2-3 minutes",
-      "evaluationCriteria": ["clarity", "structure", "technical accuracy"],
-      "difficulty": "easy|medium|hard"
-    }
+    "<specific action 1>",
+    "<specific action 2>",
+    "<specific action 3>"
   ]
-}
-`
+}`,
+
+    QUICK_FEEDBACK: `Provide brief feedback for this interview response:
+
+Question: "{question}"
+Answer: "{answer}"
+Role: {role}
+
+Give a score (1-10) and 2-3 sentence feedback focusing on:
+- Content quality
+- Communication clarity
+- Technical accuracy (if applicable)
+
+Format: Score: X/10. Brief feedback here.`
   },
 
-  // 🔧 Utility Prompts
-  UTILITIES: {
-    SKILL_EXTRACTION: `
-Extract and categorize skills from this text:
+  // 🎯 Question Generation Prompts
+  QUESTION_GENERATION: {
+    ROLE_SPECIFIC: `Generate 5 interview questions for {role} at {level} level.
 
-TEXT: {text}
+Focus on:
+- Core competencies for this role
+- {level}-appropriate complexity
+- Mix of technical and behavioral
+- Industry best practices
 
-Categorize into:
-- Technical: Programming languages, frameworks, tools
-- Soft: Communication, leadership, problem-solving
-- Domain: Industry-specific knowledge
-- Certifications: Professional credentials
+Return as numbered list with brief rationale for each.`,
 
-Return as JSON with confidence scores.
-`,
+    FOLLOW_UP_QUESTIONS: `Based on this interview exchange, generate 3 natural follow-up questions:
 
-    KEYWORD_OPTIMIZATION: `
-Suggest ATS-friendly keywords for this {role} resume:
+Original Question: "{originalQuestion}"
+Candidate Answer: "{candidateAnswer}"
+Role: {role}
 
-CURRENT CONTENT: {resumeText}
-TARGET ROLE: {role}
-EXPERIENCE LEVEL: {level}
+Follow-ups should:
+- Dig deeper into their response
+- Clarify technical details
+- Explore real-world application
+- Maintain interview flow`,
 
-Provide:
-1. Missing high-impact keywords
-2. Keyword density recommendations
-3. Industry-specific terms
-4. Action verbs to include
+    KEYWORD_OPTIMIZATION: `Generate interview questions that assess these specific skills:
 
-Focus on keywords that improve ATS parsing and recruiter appeal.
-`
+Skills to assess: {skills}
+Role: {role}
+Level: {level}
+
+Create questions that naturally evaluate these skills without being too obvious.
+Include both direct technical questions and scenario-based questions.`
   }
 };
 
-// 🎯 Model-Specific Configurations
-export const MODEL_CONFIGS = {
-  'anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    name: 'Claude 3.5 Sonnet',
-    bestFor: ['interview simulation', 'complex analysis', 'conversational AI'],
-    maxTokens: 4096,
-    temperature: 0.7,
-    topP: 0.9,
-    stopSequences: ['Human:', 'Assistant:']
-  },
+// 🔧 Utility Functions for Prompt Building
+export const buildPrompt = (template: string, variables: Record<string, any>): string => {
+  let prompt = template;
   
-  'amazon.nova-pro-v1:0': {
-    name: 'Nova Pro',
-    bestFor: ['resume analysis', 'performance evaluation', 'structured output'],
-    maxTokens: 2048,
-    temperature: 0.5,
-    topP: 0.8,
-    stopSequences: []
-  },
+  Object.entries(variables).forEach(([key, value]) => {
+    const placeholder = `{${key}}`;
+    const replacement = Array.isArray(value) ? value.join(', ') : String(value || '');
+    prompt = prompt.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), replacement);
+  });
   
-  'anthropic.claude-3-haiku-20240307-v1:0': {
-    name: 'Claude 3 Haiku',
-    bestFor: ['quick responses', 'real-time chat', 'simple tasks'],
-    maxTokens: 1024,
-    temperature: 0.8,
-    topP: 0.9,
-    stopSequences: []
-  },
-  
-  'amazon.titan-embed-text-v2:0': {
-    name: 'Titan Embeddings',
-    bestFor: ['semantic search', 'similarity matching', 'category recommendations'],
-    maxInputLength: 8000,
-    outputDimensions: 1024
-  }
+  return prompt;
 };
 
-// 🎯 Prompt Template Engine
-export class PromptTemplateEngine {
-  static format(template: string, variables: Record<string, any>): string {
-    return template.replace(/\{(\w+)\}/g, (match, key) => {
-      return variables[key] !== undefined ? String(variables[key]) : match;
-    });
-  }
-
-  static getPrompt(category: string, type: string, variables: Record<string, any> = {}): string {
-    const template = BEDROCK_PROMPTS[category as keyof typeof BEDROCK_PROMPTS]?.[type as keyof any];
-    
-    if (!template) {
-      throw new Error(`Prompt template not found: ${category}.${type}`);
-    }
-
-    return this.format(template, variables);
-  }
-
-  static getModelConfig(modelId: string) {
-    return MODEL_CONFIGS[modelId as keyof typeof MODEL_CONFIGS] || {
-      name: 'Unknown Model',
-      bestFor: ['general tasks'],
-      maxTokens: 2048,
-      temperature: 0.7,
-      topP: 0.9,
-      stopSequences: []
-    };
-  }
-}
-
-// 🎯 Usage Examples
-export const PROMPT_EXAMPLES = {
-  resumeAnalysis: () => PromptTemplateEngine.getPrompt('RESUME_ANALYSIS', 'COMPREHENSIVE', {
-    resumeText: 'Software Engineer with 5 years experience in React, Node.js...'
-  }),
+export const getPrompt = (category: string, type: string): string => {
+  const categories = category.split('.');
+  let current: any = BEDROCK_PROMPTS;
   
-  interviewQuestion: () => PromptTemplateEngine.getPrompt('INTERVIEW_SIMULATION', 'CONTEXTUAL_QUESTIONS', {
-    category: 'Frontend Developer',
-    level: 'senior',
-    questionCount: 5,
-    resumeContext: 'Candidate has React and TypeScript experience'
-  }),
+  for (const cat of categories) {
+    current = current[cat];
+    if (!current) return '';
+  }
   
-  performanceEval: () => PromptTemplateEngine.getPrompt('PERFORMANCE_EVALUATION', 'COMPREHENSIVE', {
-    role: 'Software Engineer',
-    level: 'mid',
-    duration: 45,
-    questionCount: 8,
-    transcript: 'Q: Tell me about yourself... A: I am a software engineer...'
-  })
+  return current[type] || '';
 };
-
-export default BEDROCK_PROMPTS;

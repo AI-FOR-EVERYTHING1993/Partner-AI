@@ -1,56 +1,36 @@
-#!/usr/bin/env node
-
-const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 require('dotenv').config({ path: '.env.local' });
+const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
 
-async function testModelAccess() {
-  const client = new BedrockRuntimeClient({
-    region: 'us-east-1',
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    }
-  });
+const client = new BedrockRuntimeClient({
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  }
+});
 
-  // Test different models to see which ones work
+async function testModels() {
   const models = [
-    'amazon.titan-text-lite-v1',
-    'amazon.titan-text-express-v1', 
-    'anthropic.claude-instant-v1',
-    'anthropic.claude-v2',
-    'anthropic.claude-3-haiku-20240307-v1:0'
+    'anthropic.claude-3-haiku-20240307-v1:0',
+    'anthropic.claude-3-sonnet-20240229-v1:0'
   ];
 
-  for (const modelId of models) {
+  for (const model of models) {
     try {
-      const command = new InvokeModelCommand({
-        modelId,
-        contentType: 'application/json',
+      const start = Date.now();
+      await client.send(new InvokeModelCommand({
+        modelId: model,
         body: JSON.stringify({
-          inputText: 'Hello',
-          textGenerationConfig: {
-            maxTokenCount: 50,
-            temperature: 0.7
-          }
+          anthropic_version: 'bedrock-2023-05-31',
+          max_tokens: 10,
+          messages: [{ role: 'user', content: 'Test' }]
         })
-      });
-
-      const response = await client.send(command);
-      console.log(`✅ ${modelId} - WORKS!`);
-      
-      // If this works, use it for your interview app
-      return modelId;
-      
-    } catch (error) {
-      console.log(`❌ ${modelId} - ${error.message.substring(0, 50)}...`);
+      }));
+      console.log(`✅ ${model} - ${Date.now() - start}ms`);
+    } catch (e) {
+      console.log(`❌ ${model} - ${e.name}`);
     }
   }
 }
 
-testModelAccess().then(workingModel => {
-  if (workingModel) {
-    console.log(`\n🎯 Use this model: ${workingModel}`);
-  } else {
-    console.log('\n🔍 Checking model access in AWS Console...');
-  }
-});
+testModels();

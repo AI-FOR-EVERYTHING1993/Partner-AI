@@ -21,7 +21,7 @@ export function buildSessionConfig(context?: InterviewContext): NovaSessionConfi
   return {
     region: process.env.AWS_REGION || 'us-east-1',
     modelId: process.env.NOVA_SONIC_MODEL_ID || 'us.amazon.nova-2-sonic-v1:0',
-    voiceId: 'matthew',
+    voiceId: 'Matthew',
     sampleRate: 24000,
     systemPrompt,
     interviewContext: context,
@@ -80,7 +80,7 @@ export function createNovaPayload(
   return {
     schemaVersion: '1.0',
     inferenceConfig: {
-      maxTokens: 1024,
+      maxTokens: 512,
       temperature: 0.7,
       topP: 0.9,
     },
@@ -93,7 +93,7 @@ export function createNovaPayload(
           {
             audio: {
               data: audioBase64,
-              mediaType: 'audio/webm',
+              mediaType: 'audio/wav',
             },
           },
         ],

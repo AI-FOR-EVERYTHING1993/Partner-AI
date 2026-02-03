@@ -1,1 +1,86 @@
-\"use client\"\n\nimport { useState, useRef, useCallback } from 'react';\n\ninterface AudioCaptureProps {\n  onAudioData: (audioData: ArrayBuffer) => void;\n  isRecording: boolean;\n}\n\nexport const AudioCapture = ({ onAudioData, isRecording }: AudioCaptureProps) => {\n  const [isSupported, setIsSupported] = useState(true);\n  const mediaRecorderRef = useRef<MediaRecorder | null>(null);\n  const streamRef = useRef<MediaStream | null>(null);\n\n  const startRecording = useCallback(async () => {\n    try {\n      const stream = await navigator.mediaDevices.getUserMedia({\n        audio: {\n          sampleRate: 16000,\n          channelCount: 1,\n          echoCancellation: true,\n          noiseSuppression: true\n        }\n      });\n      \n      streamRef.current = stream;\n      \n      const mediaRecorder = new MediaRecorder(stream, {\n        mimeType: 'audio/webm;codecs=opus'\n      });\n      \n      mediaRecorder.ondataavailable = (event) => {\n        if (event.data.size > 0) {\n          event.data.arrayBuffer().then(onAudioData);\n        }\n      };\n      \n      mediaRecorder.start(100); // Capture every 100ms\n      mediaRecorderRef.current = mediaRecorder;\n      \n    } catch (error) {\n      console.error('Error starting recording:', error);\n      setIsSupported(false);\n    }\n  }, [onAudioData]);\n\n  const stopRecording = useCallback(() => {\n    if (mediaRecorderRef.current) {\n      mediaRecorderRef.current.stop();\n      mediaRecorderRef.current = null;\n    }\n    \n    if (streamRef.current) {\n      streamRef.current.getTracks().forEach(track => track.stop());\n      streamRef.current = null;\n    }\n  }, []);\n\n  // Auto start/stop based on isRecording prop\n  React.useEffect(() => {\n    if (isRecording) {\n      startRecording();\n    } else {\n      stopRecording();\n    }\n  }, [isRecording, startRecording, stopRecording]);\n\n  if (!isSupported) {\n    return (\n      <div className=\"text-red-500 text-sm\">\n        Microphone access not supported or denied\n      </div>\n    );\n  }\n\n  return (\n    <div className=\"flex items-center gap-2\">\n      <div className={`w-3 h-3 rounded-full ${\n        isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-400'\n      }`} />\n      <span className=\"text-sm text-gray-600\">\n        {isRecording ? 'Recording...' : 'Ready'}\n      </span>\n    </div>\n  );\n};"
+"use client"
+
+import React, { useState, useRef, useCallback } from 'react';
+
+interface AudioCaptureProps {
+  onAudioData: (audioData: ArrayBuffer) => void;
+  isRecording: boolean;
+}
+
+export const AudioCapture = ({ onAudioData, isRecording }: AudioCaptureProps) => {
+  const [isSupported, setIsSupported] = useState(true);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const startRecording = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
+        }
+      });
+      
+      streamRef.current = stream;
+      
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          event.data.arrayBuffer().then(onAudioData);
+        }
+      };
+      
+      mediaRecorder.start(100); // Capture every 100ms
+      mediaRecorderRef.current = mediaRecorder;
+      
+    } catch (error) {
+      console.error('Error starting recording:', error);
+      setIsSupported(false);
+    }
+  }, [onAudioData]);
+
+  const stopRecording = useCallback(() => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
+    }
+    
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+  }, []);
+
+  // Auto start/stop based on isRecording prop
+  React.useEffect(() => {
+    if (isRecording) {
+      startRecording();
+    } else {
+      stopRecording();
+    }
+  }, [isRecording, startRecording, stopRecording]);
+
+  if (!isSupported) {
+    return (
+      <div className="text-red-500 text-sm">
+        Microphone access not supported or denied
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className={`w-3 h-3 rounded-full ${
+        isRecording ? 'bg-red-500 animate-pulse' : 'bg-gray-400'
+      }`} />
+      <span className="text-sm text-gray-600">
+        {isRecording ? 'Recording...' : 'Ready'}
+      </span>
+    </div>
+  );
+};

@@ -33,8 +33,11 @@ export class NovaSonicService {
   async startVoiceSession(interviewData: any): Promise<string> {
     const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     
-    // Generate AI-first prompt
+    // Generate AI-first prompt with immediate greeting
     const aiPrompt = generateAIFirstPrompt(interviewData, 'PROFESSIONAL');
+    
+    // Ensure the AI speaks first with a clear greeting
+    const initialGreeting = `Hello! Welcome to your ${interviewData.role} interview. I'm your AI interviewer today, and I'm excited to learn more about your background and experience. To start us off, could you tell me what initially drew you to ${interviewData.role} and what you're most passionate about in this field?`;
     
     const session: VoiceSession = {
       sessionId,
@@ -44,12 +47,14 @@ export class NovaSonicService {
         content: aiPrompt.systemPrompt
       }, {
         role: "assistant",
-        content: aiPrompt.openingMessage
+        content: initialGreeting
       }],
       startTime: new Date()
     };
 
     this.activeSessions.set(sessionId, session);
+    console.log(`Nova Sonic session started: ${sessionId}`);
+    console.log(`Initial greeting: ${initialGreeting}`);
     return sessionId;
   }
 

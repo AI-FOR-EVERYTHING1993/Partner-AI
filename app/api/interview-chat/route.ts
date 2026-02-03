@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bedrockService } from '@/lib/bedrock';
+import { enterpriseModelService } from '@/lib/enterprise';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, interviewContext } = await request.json();
+    const { message, interviewContext, userId } = await request.json();
 
     if (!message || !interviewContext) {
       return NextResponse.json({ 
@@ -11,16 +11,23 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const response = await bedrockService.generateInterviewResponse(message, interviewContext);
+    const response = await enterpriseModelService.conductInterview(message, interviewContext, userId);
 
     return NextResponse.json({ 
-      success: true, 
-      response,
-      model: 'amazon.nova-lite-v1:0'
+      success: response.success, 
+      response: response.content,
+      metadata: {
+        model: response.modelId,
+        qualityScore: response.metadata.quality.score,
+        processingTime: response.metadata.processingTime,
+        cached: response.cached,
+        retryCount: response.retryCount,
+        qualityIssues: response.metadata.quality.issues
+      }
     });
 
   } catch (error: any) {
-    console.error('Interview chat error:', error);
+    console.error('Enterprise interview chat error:', error);
     return NextResponse.json({ 
       error: 'Failed to generate response',
       details: error.message 

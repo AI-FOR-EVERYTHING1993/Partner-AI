@@ -3,20 +3,22 @@
 import React, { useState, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 const PDFReviewComponent = () => {
-  const [uploadedFile, setUploadedFile] = useState(null);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStep, setProcessingStep] = useState('');
-  const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState('');
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (file) {
-      if (file.type !== 'application/pdf') {
-        setError('Please upload a PDF file only');
+      // Accept both PDF and text files
+      if (!file.type.includes('pdf') && !file.type.includes('text') && !file.name.endsWith('.txt')) {
+        setError('Please upload a PDF or text file (.pdf, .txt)');
         return;
       }
       if (file.size > 10 * 1024 * 1024) {
@@ -29,49 +31,36 @@ const PDFReviewComponent = () => {
     }
   };
 
-  const processPDF = async (file) => {
+  const processPDF = async (file: File) => {
     setIsProcessing(true);
-    setProcessingStep('Extracting text from PDF...');
+    setProcessingStep('Extracting text from file...');
     
     try {
       const formData = new FormData();
       formData.append('file', file);
       
-      setProcessingStep('Analyzing resume with AI...');
-      const response = await fetch('/api/process-pdf', {
+      setProcessingStep('Analyzing resume with AI (Nova Pro)...');
+      const response = await fetch('/api/analyze-resume', {
         method: 'POST',
         body: formData
       });
       
       const result = await response.json();
       
-      if (result.success) {
-        setAnalysis(result);
-        setProcessingStep('Generating audio review...');
+      if (result.success && result.analysis) {
+        setProcessingStep('Analysis complete! Preparing results...');
         
-        // Generate audio review
-        const audioUrl = await generateAudioReview(
-          result.analysis.encouragingMessage || 
-          `Resume analysis complete. ATS Score: ${result.analysis.atsScore}/100`
-        );
+        // Redirect to results page with analysis data
+        const analysisParam = encodeURIComponent(JSON.stringify(result.analysis));
+        router.push(`/resume-results?analysis=${analysisParam}`);
         
-        // Store for results page
-        sessionStorage.setItem('resumeAnalysis', JSON.stringify({
-          ...result.analysis,
-          metadata: result.metadata,
-          audioReview: audioUrl
-        }));
-        
-        setProcessingStep('Complete! Redirecting...');
-        setTimeout(() => {
-          window.location.href = '/resume-results';
-        }, 2000);
       } else {
-        setError(result.error || 'Failed to process PDF');
+        setError(result.error || 'Failed to analyze resume');
+        console.error('Analysis failed:', result);
       }
       
     } catch (error) {
-      console.error('Error processing PDF:', error);
+      console.error('Error processing file:', error);
       setError('Network error. Please try again.');
     } finally {
       setIsProcessing(false);
@@ -79,92 +68,101 @@ const PDFReviewComponent = () => {
     }
   };
 
-  const generateAudioReview = async (text) => {
-    try {
-      const response = await fetch('/api/polly/speak', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          text: text.substring(0, 500),
-          voice: 'Joanna' 
-        })
-      });
-      
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        return URL.createObjectURL(audioBlob);
-      }
-      return null;
-    } catch (error) {
-      console.error('Error generating audio:', error);
-      return null;
-    }
-  };
-
   return (
     <div className="pdf-review-component p-6 max-w-4xl mx-auto">
-      <Card className="p-6">
-        <h2 className="text-2xl font-bold mb-6">Resume Analysis</h2>
+      <Card className="p-8 bg-white shadow-lg">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Upload Your Resume</h2>
+          <p className="text-gray-600">Get AI-powered analysis with interview recommendations</p>
+        </div>
         
         <div className="upload-section mb-6">
           <input
             type="file"
             ref={fileInputRef}
             onChange={handleFileUpload}
-            accept=".pdf"
+            accept=".pdf,.txt"
             className="hidden"
           />
-          <Button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isProcessing}
-            className="w-full sm:w-auto"
-          >
-            {isProcessing ? 'Processing...' : 'Upload PDF Resume'}
-          </Button>
-          <p className="text-sm text-gray-500 mt-2">Maximum file size: 10MB</p>
+          
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-emerald-400 transition-colors">
+            <div className="mb-4">
+              <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            
+            <Button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isProcessing}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 text-lg"
+            >
+              {isProcessing ? 'Processing...' : '📄 Choose Resume File'}
+            </Button>
+            
+            <p className="text-sm text-gray-500 mt-4">
+              Supports PDF and text files • Maximum size: 10MB
+            </p>
+          </div>
         </div>
 
         {error && (
-          <div className="error-message mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
-            {error}
+          <div className="error-message mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            <div className="flex items-center">
+              <span className="text-red-500 mr-2">⚠️</span>
+              {error}
+            </div>
           </div>
         )}
 
         {uploadedFile && (
-          <div className="file-info mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="font-medium">File: {uploadedFile.name}</p>
-            <p className="text-sm text-gray-600">Size: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+          <div className="file-info mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-blue-900">📎 {uploadedFile.name}</p>
+                <p className="text-sm text-blue-600">Size: {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+              </div>
+              <div className="text-blue-600">
+                ✅ Ready for analysis
+              </div>
+            </div>
           </div>
         )}
 
         {isProcessing && (
-          <div className="processing-status mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
-              <span className="text-blue-700">{processingStep}</span>
+          <div className="processing-status mb-4 p-6 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <div className="flex items-center space-x-4">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+              <div>
+                <p className="text-emerald-800 font-medium">{processingStep}</p>
+                <p className="text-emerald-600 text-sm">This may take 10-30 seconds...</p>
+              </div>
+            </div>
+            
+            <div className="mt-4 bg-emerald-100 rounded-full h-2">
+              <div className="bg-emerald-500 h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
             </div>
           </div>
         )}
 
-        {analysis && !isProcessing && (
-          <div className="analysis-preview p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h3 className="font-bold text-green-800 mb-2">Analysis Complete!</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="font-medium">ATS Score:</span> {analysis.analysis.atsScore}/100
-              </div>
-              <div>
-                <span className="font-medium">Industry:</span> {analysis.analysis.detectedIndustry}
-              </div>
-              <div>
-                <span className="font-medium">Experience Level:</span> {analysis.analysis.experienceLevel}
-              </div>
-              <div>
-                <span className="font-medium">Word Count:</span> {analysis.metadata?.wordCount}
-              </div>
-            </div>
+        {/* Features */}
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+          <div className="p-4">
+            <div className="text-2xl mb-2">🤖</div>
+            <h3 className="font-semibold text-gray-900">AI Analysis</h3>
+            <p className="text-sm text-gray-600">Powered by Amazon Nova Pro</p>
           </div>
-        )}
+          <div className="p-4">
+            <div className="text-2xl mb-2">📊</div>
+            <h3 className="font-semibold text-gray-900">ATS Scoring</h3>
+            <p className="text-sm text-gray-600">Applicant tracking system compatibility</p>
+          </div>
+          <div className="p-4">
+            <div className="text-2xl mb-2">🎯</div>
+            <h3 className="font-semibold text-gray-900">Interview Prep</h3>
+            <p className="text-sm text-gray-600">Personalized interview recommendations</p>
+          </div>
+        </div>
       </Card>
     </div>
   );

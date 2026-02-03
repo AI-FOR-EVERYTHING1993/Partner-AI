@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { bedrockService } from '@/lib/bedrock';
+import { enterpriseModelService } from '@/lib/enterprise';
 
 export async function POST(request: NextRequest) {
   try {
-    const { role, level, techStack } = await request.json();
+    const { role, level, techStack, userId } = await request.json();
 
     if (!role || !level || !techStack) {
       return NextResponse.json({ 
@@ -11,16 +11,28 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const questions = await bedrockService.generateInterviewQuestions(role, level, techStack);
+    const response = await enterpriseModelService.generateQuestions(role, level, techStack, userId);
+
+    if (!response.success) {
+      return NextResponse.json({ 
+        error: 'Failed to generate questions',
+        details: response.content 
+      }, { status: 500 });
+    }
 
     return NextResponse.json({ 
       success: true, 
-      questions,
-      model: 'amazon.nova-lite-v1:0'
+      questions: response.content,
+      metadata: {
+        model: response.modelId,
+        qualityScore: response.metadata.quality.score,
+        processingTime: response.metadata.processingTime,
+        cached: response.cached
+      }
     });
 
   } catch (error: any) {
-    console.error('Interview questions error:', error);
+    console.error('Enterprise questions error:', error);
     return NextResponse.json({ 
       error: 'Failed to generate questions',
       details: error.message 

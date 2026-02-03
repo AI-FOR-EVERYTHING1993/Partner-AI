@@ -1,0 +1,14 @@
+John Smith
+Senior Software Engineer
+Email: john.smith@email.com
+
+EXPERIENCE
+Senior Full Stack Developer | TechCorp | 2020-2024
+- Built scalable web applications using React, Node.js, and AWS
+- Led a team of 3 developers on microservices architecture
+- Implemented CI/CD pipelines using Docker and Kubernetes
+
+SKILLS
+Frontend: React, JavaScript, TypeScript, HTML5, CSS3
+Backend: Node.js, Python, Express.js, MongoDB, PostgreSQL
+Cloud: AWS (EC2, S3, Lambda), Docker, Kubernetes

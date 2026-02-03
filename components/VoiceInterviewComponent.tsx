@@ -55,12 +55,14 @@ const VoiceInterviewComponent = ({ interviewContext }) => {
 
   const startInterview = async () => {
     try {
-      const response = await fetch('/api/interview-chat', {
+      // Call the voice interview API with 'start' action to get AI's first message
+      const response = await fetch('/api/voice-interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: 'Start the interview with an opening question.',
-          interviewContext
+          action: 'start',
+          context: interviewContext,
+          message: 'Start the interview'
         })
       });
       
@@ -82,14 +84,28 @@ const VoiceInterviewComponent = ({ interviewContext }) => {
           const audioUrl = URL.createObjectURL(audioBlob);
           const audio = new Audio(audioUrl);
           setIsSpeaking(true);
-          audio.onended = () => setIsSpeaking(false);
+          audio.onended = () => {
+            setIsSpeaking(false);
+            // Automatically start listening after AI finishes speaking
+            setTimeout(() => startListening(), 1000);
+          };
           audio.play();
+        } else {
+          // Fallback to browser speech synthesis if Polly fails
+          speakText(aiResponse);
         }
         
         setInterviewStarted(true);
+        console.log('Interview started with AI greeting:', aiResponse);
       }
     } catch (error) {
       console.error('Error starting interview:', error);
+      // Fallback greeting if API fails
+      const fallbackGreeting = `Hello! Welcome to your ${interviewContext?.category} interview. I'm Sarah, your AI interviewer today. Let's begin - could you tell me about your background in ${interviewContext?.category}?`;
+      setCurrentResponse(fallbackGreeting);
+      setConversation([{ type: 'ai', message: fallbackGreeting }]);
+      speakText(fallbackGreeting);
+      setInterviewStarted(true);
     }
   };
 
@@ -97,14 +113,15 @@ const VoiceInterviewComponent = ({ interviewContext }) => {
     setConversation(prev => [...prev, { type: 'user', message: userMessage }]);
     
     try {
-      const response = await fetch('/api/interview-chat', {
+      const response = await fetch('/api/voice-interview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'respond',
           message: userMessage,
-          interviewContext: {
+          context: {
             ...interviewContext,
-            conversation: conversation.slice(-4) // Last 4 messages for context
+            transcript: conversation.map(c => `${c.type}: ${c.message}`).join('\\n')
           }
         })
       });
@@ -115,9 +132,14 @@ const VoiceInterviewComponent = ({ interviewContext }) => {
         setCurrentResponse(aiResponse);
         setConversation(prev => [...prev, { type: 'ai', message: aiResponse }]);
         speakText(aiResponse);
+        console.log('AI responded:', aiResponse);
       }
     } catch (error) {
       console.error('Error processing response:', error);
+      const fallbackResponse = "That's interesting! Could you tell me more about that?";
+      setCurrentResponse(fallbackResponse);
+      setConversation(prev => [...prev, { type: 'ai', message: fallbackResponse }]);
+      speakText(fallbackResponse);
     }
     
     setTranscript('');
@@ -131,9 +153,18 @@ const VoiceInterviewComponent = ({ interviewContext }) => {
       utterance.pitch = 1.1;
       
       utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        // Automatically start listening after AI finishes speaking
+        setTimeout(() => {
+          if (!isListening) {
+            startListening();
+          }
+        }, 1000);
+      };
       
       synthRef.current.speak(utterance);
+      console.log('AI is speaking:', text);
     }
   };
 

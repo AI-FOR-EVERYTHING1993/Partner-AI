@@ -12,6 +12,19 @@ export async function POST(request: NextRequest) {
   try {
     const { username } = await request.json();
     
+    // Check if auth bypass is enabled
+    const isAuthBypassEnabled = process.env.AUTH_BYPASS_ENABLED === 'true' || 
+      !process.env.AWS_COGNITO_CLIENT_ID ||
+      process.env.AWS_COGNITO_CLIENT_ID === 'your_client_id_here';
+
+    if (isAuthBypassEnabled) {
+      console.log('🔓 Auth bypass: Resend code simulated for', username);
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Verification code sent! (Auth bypass mode)'
+      });
+    }
+    
     const cognitoClient = new CognitoIdentityProviderClient({
       region: 'us-east-1'
     });
@@ -34,7 +47,7 @@ export async function POST(request: NextRequest) {
       success: true, 
       message: 'Verification code sent to your email'
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Resend error:', error);
     return NextResponse.json({ 
       success: false, 

@@ -1,65 +1,69 @@
 import { NextRequest } from 'next/server';
-import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
-
-const client = new BedrockRuntimeClient({
-  region: process.env.AWS_REGION || "us-east-1",
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    sessionToken: process.env.AWS_BEARER_TOKEN_BEDROCK
-  }
-});
+import { enterpriseModelService } from '@/lib/enterprise';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context, action } = await request.json();
+    const { message, context, action, userId } = await request.json();
     
     let response;
     switch (action) {
       case 'start':
-        response = await startInterview(context);
+        response = await startInterview(context, userId);
         break;
       case 'respond':
-        response = await processResponse(message, context);
+        response = await processResponse(message, context, userId);
         break;
       case 'analyze':
-        response = await analyzeConversation(context.transcript);
+        response = await analyzeConversation(context.transcript, context, userId);
         break;
       default:
-        response = await processResponse(message, context);
+        response = await processResponse(message, context, userId);
     }
     
     return Response.json({
-      success: true,
-      response,
+      success: response.success,
+      response: response.content,
+      metadata: {
+        model: response.modelId,
+        quality: response.metadata.quality.score,
+        cached: response.cached
+      },
       timestamp: new Date().toISOString()
     });
     
   } catch (error) {
-    console.error('Voice AI Error:', error);
+    console.error('Enterprise Voice AI Error:', error);
     return Response.json({
       success: false,
-      error: error.message,
+      error: error instanceof Error ? error.message : 'Unknown error',
       fallback: "I'm having technical difficulties. Let's continue with the interview."
     }, { status: 500 });
   }
 }
 
-async function startInterview(context: any) {
-  const prompt = `You are Sarah, a friendly AI interviewer. Start a ${context.category} interview for a ${context.level} level position.
+async function startInterview(context: any, userId?: string) {
+  const prompt = `You are Sarah, a friendly AI interviewer who ALWAYS speaks first. Start a ${context.category} interview for a ${context.level} level position.
 
 Context:
 - Role: ${context.category}
 - Level: ${context.level}
-- Company: ${context.company}
+- Company: ${context.company || 'the company'}
 - Skills: ${context.skills || 'General'}
 
-Introduce yourself warmly and ask the first question. Keep it conversational and under 100 words.`;
+IMPORTANT: You must immediately introduce yourself warmly and ask the first question. Do not wait for the user to speak. Start with: "Hello! Welcome to your ${context.category} interview. I'm Sarah, your AI interviewer today, and I'm excited to learn more about your background and experience."
 
-  return await invokeNova(prompt);
+Then ask an engaging opening question. Keep it conversational and under 80 words total.`;
+
+  return await enterpriseModelService.invoke({
+    modelId: process.env.INTERVIEW_DEFAULT_MODEL!,
+    prompt,
+    context: { ...context, mode: 'voice', aiFirst: true },
+    responseType: 'interview',
+    userId
+  });
 }
 
-async function processResponse(userMessage: string, context: any) {
+async function processResponse(userMessage: string, context: any, userId?: string) {
   const prompt = `You are Sarah, conducting a ${context.category} interview. 
 
 Previous conversation:
@@ -74,10 +78,16 @@ Respond as Sarah would:
 - Stay focused on ${context.category} skills
 - Under 80 words`;
 
-  return await invokeNova(prompt);
+  return await enterpriseModelService.invoke({
+    modelId: process.env.INTERVIEW_DEFAULT_MODEL!,
+    prompt,
+    context: { ...context, mode: 'voice', userMessage },
+    responseType: 'interview',
+    userId
+  });
 }
 
-async function analyzeConversation(transcript: string) {
+async function analyzeConversation(transcript: string, context: any, userId?: string) {
   const prompt = `Analyze this interview conversation and provide feedback:
 
 ${transcript}
@@ -92,68 +102,12 @@ Return JSON with:
   "feedback": "encouraging summary"
 }`;
 
-  return await invokeClaude(prompt);
-}
-
-async function invokeNova(prompt: string) {
-  try {
-    const command = new InvokeModelCommand({
-      modelId: "us.amazon.nova-pro-v1:0",
-      body: JSON.stringify({
-        messages: [{ role: "user", content: [{ text: prompt }] }],
-        inferenceConfig: {
-          maxTokens: 200,
-          temperature: 0.7
-        }
-      }),
-      contentType: "application/json",
-    });
-
-    const response = await client.send(command);
-    const result = JSON.parse(new TextDecoder().decode(response.body));
-    return result.output?.message?.content?.[0]?.text || "Let's continue with the interview.";
-  } catch (error) {
-    console.error('Nova Error:', error);
-    return getFallbackResponse(prompt);
-  }
-}
-
-async function invokeClaude(prompt: string) {
-  try {
-    const command = new InvokeModelCommand({
-      modelId: "anthropic.claude-3-5-sonnet-20241022-v2:0",
-      body: JSON.stringify({
-        anthropic_version: "bedrock-2023-05-31",
-        max_tokens: 500,
-        messages: [{ role: "user", content: prompt }]
-      }),
-      contentType: "application/json",
-    });
-
-    const response = await client.send(command);
-    const result = JSON.parse(new TextDecoder().decode(response.body));
-    return result.content[0].text;
-  } catch (error) {
-    console.error('Claude Error:', error);
-    return JSON.stringify({
-      overallScore: 7,
-      technicalScore: 7,
-      communicationScore: 8,
-      strengths: ["Good communication", "Relevant experience"],
-      improvements: ["Add more technical details", "Provide specific examples"],
-      feedback: "Great job! You showed good understanding and communication skills."
-    });
-  }
-}
-
-function getFallbackResponse(prompt: string) {
-  if (prompt.includes('start') || prompt.includes('introduce')) {
-    return "Hi! I'm Sarah, your AI interviewer. I'm excited to learn about your experience and skills. Let's start with a simple question: Can you tell me about yourself and what interests you about this role?";
-  }
-  
-  if (prompt.includes('technical') || prompt.includes('code')) {
-    return "That's interesting! Can you walk me through how you would approach solving a complex technical problem? What's your process?";
-  }
-  
-  return "Great answer! Can you give me a specific example of when you've applied that skill in a real project?";
+  return await enterpriseModelService.invoke({
+    modelId: process.env.FEEDBACK_MODEL!,
+    prompt,
+    context: { ...context, transcript },
+    responseType: 'feedback',
+    overrides: { responseFormat: 'json' },
+    userId
+  });
 }

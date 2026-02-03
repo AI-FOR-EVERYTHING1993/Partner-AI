@@ -175,17 +175,21 @@ const InterviewSelector = () => {
 
   const handleStartInterview = () => {
     if (selection.category && selection.experienceLevel && selection.companyType) {
-      const params = new URLSearchParams({
+      const interviewData = {
         category: selection.category,
         level: selection.experienceLevel,
         company: selection.companyType,
         type: selection.type,
+        role: allInterviews.find(i => i.id === selection.category)?.name || 'General',
+        techstack: resumeAnalysis?.extractedSkills || [],
         ...(resumeAnalysis && { 
           aiAnalyzed: 'true',
           skills: resumeAnalysis.extractedSkills.join(',') 
         })
-      });
-      window.location.href = `/interview?${params.toString()}`;
+      };
+      
+      localStorage.setItem('interviewData', JSON.stringify(interviewData));
+      window.location.href = `/speech-interview`;
     }
   };
 
@@ -468,7 +472,7 @@ const InterviewSelector = () => {
           disabled={!isComplete}
           className="px-12 py-4 text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-500 text-white shadow-lg transform transition-all hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
         >
-          {isComplete ? 'Start Interview →' : 'Complete Selection to Start'}
+          {isComplete ? '🎤 Start Voice Interview →' : 'Complete Selection to Start'}
         </Button>
       </div>
         </div>

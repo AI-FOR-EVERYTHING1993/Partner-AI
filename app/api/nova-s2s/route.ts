@@ -1,74 +1,68 @@
-// app/api/nova-s2s/route.ts
-import { 
-  BedrockRuntimeClient, 
-  InvokeModelCommand 
-} from '@aws-sdk/client-bedrock-runtime';
 import { NextRequest, NextResponse } from 'next/server';
-import { buildSessionConfig, createNovaPayload, parseNovaResponse, generateMockResponse } from '@/lib/nova/client';
-import { InterviewContext } from '@/lib/nova/types';
+import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { PollyClient, SynthesizeSpeechCommand } from '@aws-sdk/client-polly';
+import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 
-// Initialize Bedrock client
-const bedrockClient = new BedrockRuntimeClient({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
+const bedrock = new BedrockRuntimeClient({
+  region: 'us-east-1',
+  credentials: fromNodeProviderChain(),
+});
+
+const polly = new PollyClient({
+  region: 'us-east-1', 
+  credentials: fromNodeProviderChain(),
 });
 
 export async function POST(request: NextRequest) {
   try {
-    const { audio, context, conversationHistory } = await request.json();
-
-    // Validate credentials
-    if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
-      console.warn('AWS credentials not configured, using mock response');
-      return NextResponse.json(generateMockResponse(context));
+    const { text, context } = await request.json();
+    
+    if (!text) {
+      return NextResponse.json({ error: 'No text provided' }, { status: 400 });
     }
 
-    // Build config and payload
-    const config = buildSessionConfig(context as InterviewContext);
-    const payload = createNovaPayload(config, audio, conversationHistory || []);
+    // Generate AI response using Nova Lite (which works)
+    const prompt = context ? 
+      `You are interviewing for a ${context.role} position. The candidate said: "${text}". Ask a relevant follow-up question. Keep it under 50 words.` :
+      `The user said: "${text}". Respond conversationally in under 50 words.`;
+
+    const payload = {
+      messages: [{ role: 'user', content: [{ text: prompt }] }],
+      inferenceConfig: { maxTokens: 100, temperature: 0.7 }
+    };
 
     const command = new InvokeModelCommand({
-      modelId: config.modelId,
+      modelId: 'amazon.nova-lite-v1:0',
       contentType: 'application/json',
       accept: 'application/json',
       body: JSON.stringify(payload),
     });
 
-    const response = await bedrockClient.send(command);
-    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+    const response = await bedrock.send(command);
+    const result = JSON.parse(new TextDecoder().decode(response.body));
+    const aiText = result.output?.message?.content?.[0]?.text || 'I understand. Please continue.';
 
-    const result = parseNovaResponse(responseBody);
+    // Convert to speech using Polly
+    const speechCommand = new SynthesizeSpeechCommand({
+      Text: aiText,
+      OutputFormat: 'mp3',
+      VoiceId: 'Joanna',
+      Engine: 'neural'
+    });
+
+    const speechResponse = await polly.send(speechCommand);
+    const audioBuffer = await speechResponse.AudioStream?.transformToByteArray();
+    const audioBase64 = audioBuffer ? Buffer.from(audioBuffer).toString('base64') : null;
 
     return NextResponse.json({
-      userTranscript: result.userTranscript,
-      assistantText: result.assistantText,
-      audioBase64: result.audioBase64,
-      confidence: result.confidence,
+      userTranscript: text,
+      assistantText: aiText,
+      audioBase64
     });
+
   } catch (error: any) {
-    console.error('Nova S2S Error:', error);
-
-    if (error.name === 'AccessDeniedException') {
-      return NextResponse.json(
-        { error: 'AWS access denied. Check credentials and Bedrock permissions.' },
-        { status: 403 }
-      );
-    }
-
-    if (error.name === 'ResourceNotFoundException') {
-      return NextResponse.json(
-        { error: 'Nova Sonic model not found. Enable it in AWS Bedrock console.' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(
-      { error: error.message || 'Failed to process audio' },
-      { status: 500 }
-    );
+    console.error('Speech error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
